@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { Navbar } from "../components/Navbar";
@@ -175,6 +175,116 @@ export function Movimentacoes() {
       }
     }
   }, [formData.maquina_id, maquinas]);
+
+  const maquinaSelecionada = useMemo(
+    () =>
+      maquinas.find(
+        (maquina) => String(maquina.id) === String(formData.maquina_id),
+      ) || null,
+    [formData.maquina_id, maquinas],
+  );
+
+  const ultimaMovimentacaoMaquina = useMemo(
+    () =>
+      movimentacoes
+        .filter(
+          (movimentacao) =>
+            String(movimentacao.maquinaId ?? movimentacao.maquina_id) ===
+            String(formData.maquina_id),
+        )
+        .sort(
+          (a, b) =>
+            new Date(b.dataColeta || b.createdAt) -
+            new Date(a.dataColeta || a.createdAt),
+        )[0] || null,
+    [formData.maquina_id, movimentacoes],
+  );
+
+  const sugestaoMovimentacao = useMemo(() => {
+    if (!maquinaSelecionada || !ultimaMovimentacaoMaquina) {
+      return null;
+    }
+
+    const contadorOutAtual = Number(formData.contadorOut);
+    const contadorOutAnterior = Number(ultimaMovimentacaoMaquina.contadorOut);
+    const contadorOutAnteriorInformado =
+      ultimaMovimentacaoMaquina.contadorOut !== null &&
+      ultimaMovimentacaoMaquina.contadorOut !== undefined;
+    const totalAnteriorRegistrado =
+      ultimaMovimentacaoMaquina.totalPos ??
+      ultimaMovimentacaoMaquina.total_pos;
+    const totalAnterior = Number(totalAnteriorRegistrado);
+    const capacidade = Number(
+      maquinaSelecionada.capacidadePadrao ?? maquinaSelecionada.capacidade,
+    );
+
+    if (
+      formData.contadorOut === "" ||
+      !contadorOutAnteriorInformado ||
+      totalAnteriorRegistrado === null ||
+      totalAnteriorRegistrado === undefined ||
+      !Number.isFinite(contadorOutAtual) ||
+      !Number.isFinite(contadorOutAnterior) ||
+      !Number.isFinite(totalAnterior)
+    ) {
+      return null;
+    }
+
+    const saidasPeloContador = contadorOutAtual - contadorOutAnterior;
+    if (saidasPeloContador < 0) {
+      return {
+        erro:
+          "O contador OUT atual está menor que o anterior. Confira se o contador foi reiniciado ou digitado corretamente.",
+      };
+    }
+
+    const quantidadeAtual = Math.max(0, totalAnterior - saidasPeloContador);
+    const quantidadeSugerida = Number.isFinite(capacidade)
+      ? Math.max(0, capacidade - quantidadeAtual)
+      : null;
+
+    const contadorInAtual = Number(formData.contadorIn);
+    const contadorInAnterior = Number(ultimaMovimentacaoMaquina.contadorIn);
+    const fichasPeloContador =
+      formData.contadorIn !== "" &&
+      Number.isFinite(contadorInAtual) &&
+      Number.isFinite(contadorInAnterior) &&
+      contadorInAtual >= contadorInAnterior
+        ? contadorInAtual - contadorInAnterior
+        : null;
+
+    return {
+      capacidade: Number.isFinite(capacidade) ? capacidade : null,
+      contadorOutAnterior,
+      totalAnterior,
+      saidasPeloContador,
+      quantidadeAtual,
+      quantidadeSugerida,
+      fichasPeloContador,
+    };
+  }, [
+    formData.contadorIn,
+    formData.contadorOut,
+    maquinaSelecionada,
+    ultimaMovimentacaoMaquina,
+  ]);
+
+  useEffect(() => {
+    if (!sugestaoMovimentacao || sugestaoMovimentacao.erro) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      quantidadeAtualMaquina: String(sugestaoMovimentacao.quantidadeAtual),
+      quantidadeAdicionada:
+        sugestaoMovimentacao.quantidadeSugerida === null
+          ? prev.quantidadeAdicionada
+          : String(sugestaoMovimentacao.quantidadeSugerida),
+      fichas:
+        sugestaoMovimentacao.fichasPeloContador === null
+          ? prev.fichas
+          : String(sugestaoMovimentacao.fichasPeloContador),
+    }));
+  }, [sugestaoMovimentacao]);
 
   // Verificar divergência entre contador OUT e total pre informado
   useEffect(() => {
@@ -1180,6 +1290,102 @@ export function Movimentacoes() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="rounded-xl border-2 border-secondary bg-secondary/5 p-4 sm:p-5">
+                <div className="mb-4">
+                  <h4 className="text-base font-bold text-secondary-dark">
+                    1. Selecione onde será feita a movimentação
+                  </h4>
+                  <p className="mt-1 text-sm text-gray-600">
+                    Comece escolhendo a loja e depois a máquina.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      🏪 Loja *
+                    </label>
+                    <select
+                      value={filtroLojaForm}
+                      onChange={(e) => {
+                        setFiltroLojaForm(e.target.value);
+                        setFormData((prev) => ({
+                          ...prev,
+                          maquina_id: "",
+                          produto_id: "",
+                          quantidadeAtualMaquina: "",
+                          quantidadeAdicionada: "",
+                          fichas: "",
+                          contadorIn: "",
+                          contadorOut: "",
+                        }));
+                      }}
+                      className="select-field"
+                      required
+                      autoFocus
+                    >
+                      <option value="">Selecione uma loja...</option>
+                      {lojas
+                        .filter((loja) => loja.ativo)
+                        .map((loja) => (
+                          <option key={loja.id} value={loja.id}>
+                            {loja.nome}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      🎰 Máquina *
+                    </label>
+                    <select
+                      name="maquina_id"
+                      value={formData.maquina_id}
+                      onChange={(e) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          maquina_id: e.target.value,
+                          produto_id: "",
+                          quantidadeAtualMaquina: "",
+                          quantidadeAdicionada: "",
+                          fichas: "",
+                          contadorIn: "",
+                          contadorOut: "",
+                        }));
+                      }}
+                      className="select-field"
+                      required
+                      disabled={!filtroLojaForm}
+                    >
+                      <option value="">
+                        {filtroLojaForm
+                          ? "Selecione uma máquina..."
+                          : "Primeiro selecione uma loja"}
+                      </option>
+                      {maquinas
+                        .filter(
+                          (maquina) =>
+                            String(maquina.lojaId) === String(filtroLojaForm),
+                        )
+                        .map((maquina) => (
+                          <option key={maquina.id} value={maquina.id}>
+                            {maquina.nome} - {maquina.codigo}
+                          </option>
+                        ))}
+                    </select>
+                    {maquinaSelecionada && (
+                      <p className="mt-1 text-xs font-medium text-secondary-dark">
+                        Capacidade padrão:{" "}
+                        {maquinaSelecionada.capacidadePadrao ??
+                          maquinaSelecionada.capacidade ??
+                          "não informada"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="p-4 bg-white border border-blue-100 rounded-lg">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Foto dos contadores
@@ -1300,6 +1506,84 @@ export function Movimentacoes() {
                   Não preciso informar IN/OUT nesta movimentação
                 </label>
               </div>
+
+              {formData.maquina_id &&
+                !formData.ignoreInOut &&
+                ultimaMovimentacaoMaquina &&
+                (sugestaoMovimentacao?.erro ? (
+                  <div className="rounded-xl border-2 border-red-200 bg-red-50 p-4 text-red-800">
+                    <p className="font-bold">⚠️ Não foi possível calcular</p>
+                    <p className="mt-1 text-sm">
+                      {sugestaoMovimentacao.erro}
+                    </p>
+                  </div>
+                ) : sugestaoMovimentacao ? (
+                  <div className="rounded-xl border-2 border-primary bg-gradient-to-r from-secondary/10 to-primary/10 p-4 sm:p-5">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <div>
+                        <h4 className="font-bold text-secondary-dark">
+                          ✨ Movimentação sugerida
+                        </h4>
+                        <p className="text-xs text-gray-600">
+                          Calculada automaticamente pelos contadores e pela
+                          última movimentação.
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-white">
+                        Padrão: {sugestaoMovimentacao.capacidade ?? "—"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <div className="rounded-lg bg-white p-3 shadow-sm">
+                        <p className="text-xs font-semibold uppercase text-gray-500">
+                          Tem na máquina
+                        </p>
+                        <p className="mt-1 text-3xl font-black text-secondary">
+                          {sugestaoMovimentacao.quantidadeAtual}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          após {sugestaoMovimentacao.saidasPeloContador} saídas
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-primary p-3 shadow-sm">
+                        <p className="text-xs font-semibold uppercase text-secondary-dark">
+                          Abastecer agora
+                        </p>
+                        <p className="mt-1 text-3xl font-black text-secondary-dark">
+                          {sugestaoMovimentacao.quantidadeSugerida ?? "—"}
+                        </p>
+                        <p className="text-xs text-secondary-dark/80">
+                          para voltar ao padrão
+                        </p>
+                      </div>
+                      <div className="rounded-lg bg-white p-3 shadow-sm">
+                        <p className="text-xs font-semibold uppercase text-gray-500">
+                          Fichas no período
+                        </p>
+                        <p className="mt-1 text-3xl font-black text-secondary">
+                          {sugestaoMovimentacao.fichasPeloContador ?? "—"}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          diferença do contador IN
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+                    Informe os contadores para gerar automaticamente a
+                    movimentação sugerida.
+                  </div>
+                ))}
+
+              {formData.maquina_id && !ultimaMovimentacaoMaquina && (
+                <div className="rounded-xl border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
+                  Esta máquina ainda não possui movimentação anterior. Na
+                  primeira visita, informe manualmente a quantidade atual.
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1483,70 +1767,6 @@ export function Movimentacoes() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Loja *
-                  </label>
-                  <select
-                    value={filtroLojaForm}
-                    onChange={(e) => {
-                      setFiltroLojaForm(e.target.value);
-                      setFormData({
-                        ...formData,
-                        maquina_id: "",
-                        produto_id: "",
-                      });
-                    }}
-                    className="select-field"
-                    required
-                  >
-                    <option value="">Selecione uma loja...</option>
-                    {lojas
-                      .filter((l) => l.ativo)
-                      .map((loja) => (
-                        <option key={loja.id} value={loja.id}>
-                          {loja.nome}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Máquina *
-                  </label>
-                  <select
-                    name="maquina_id"
-                    value={formData.maquina_id}
-                    onChange={handleChange}
-                    className="select-field"
-                    required
-                    disabled={!filtroLojaForm}
-                  >
-                    <option value="">
-                      {filtroLojaForm
-                        ? "Selecione uma máquina..."
-                        : "Primeiro selecione uma loja"}
-                    </option>
-                    {maquinas
-                      .filter(
-                        (m) =>
-                          !filtroLojaForm ||
-                          String(m.lojaId) === String(filtroLojaForm),
-                      )
-                      .map((maquina) => (
-                        <option key={maquina.id} value={maquina.id}>
-                          {maquina.nome} - {maquina.codigo}
-                        </option>
-                      ))}
-                  </select>
-                  {filtroLojaForm && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      💡 Mostrando apenas máquinas da loja selecionada
-                    </p>
-                  )}
-                </div>
-
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Produto *
