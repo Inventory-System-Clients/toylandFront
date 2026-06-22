@@ -378,22 +378,41 @@ export function ProdutosAComprar() {
       setConfirmandoPendente(pendingId);
       setErroConfirmar("");
       try {
-        await Promise.all(
-          pendente.lojas.map((loja) =>
-            api.post("/movimentacao-estoque-loja", {
-              lojaId: loja.lojaId,
-              produtos: loja.produtos
-                .filter((p) => p.produtoId !== null)
-                .map((p) => ({
-                  produtoId: p.produtoId,
-                  quantidade: p.quantidade,
-                  tipoMovimentacao: "entrada",
-                })),
-              usuarioId: usuario?.id,
-              observacao: "Abastecimento via lista de compras",
+        const garagem = lojas.find(
+          (loja) => loja.nome?.trim().toLowerCase() === "garagem",
+        );
+        if (!garagem) {
+          throw new Error(
+            "O depósito central Garagem ainda não está disponível.",
+          );
+        }
+
+        const quantidadesPorProduto = new Map();
+        pendente.lojas.forEach((loja) => {
+          loja.produtos
+            .filter((produto) => produto.produtoId !== null)
+            .forEach((produto) => {
+              quantidadesPorProduto.set(
+                produto.produtoId,
+                (quantidadesPorProduto.get(produto.produtoId) || 0) +
+                  Number(produto.quantidade || 0),
+              );
+            });
+        });
+
+        await api.post("/movimentacao-estoque-loja", {
+          lojaId: garagem.id,
+          produtos: Array.from(quantidadesPorProduto.entries()).map(
+            ([produtoId, quantidade]) => ({
+              produtoId,
+              quantidade,
+              tipoMovimentacao: "entrada",
             }),
           ),
-        );
+          usuarioId: usuario?.id,
+          observacao:
+            "Entrada de compras na Garagem para posterior distribuição às lojas",
+        });
         await api.delete(`/lista-compras-pendentes/${pendingId}`);
         setPendentes((prev) => prev.filter((p) => p.id !== pendingId));
       } catch (err) {
@@ -404,7 +423,7 @@ export function ProdutosAComprar() {
         setConfirmandoPendente(null);
       }
     },
-    [pendentes, usuario],
+    [lojas, pendentes, usuario],
   );
 
   // ── carga inicial ────────────────────────────────────────────────────────
@@ -543,7 +562,7 @@ export function ProdutosAComprar() {
         </head>
         <body>
           ${lojasSectionsHtml}
-          <script>window.onload = function() { window.print(); };<\/script>
+          <script>window.onload = function() { window.print(); };</script>
         </body>
       </html>
     `);

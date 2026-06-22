@@ -86,21 +86,23 @@ export function Dashboard() {
         return;
       }
       const payload = {
-        lojaId: movimentacaoLojaId,
+        lojaDestinoId: movimentacaoLojaId,
         usuarioId: usuario?.id,
         produtos: produtosValidos.map((p) => ({
           produtoId: p.produtoId,
           quantidade: parseInt(p.quantidade),
-          tipoMovimentacao: p.tipoMovimentacao || "saida",
         })),
         observacao: "",
         dataMovimentacao: new Date().toISOString(),
       };
-      await api.post("/movimentacao-estoque-loja", payload);
+      await api.post(
+        "/movimentacao-estoque-loja/transferir-da-garagem",
+        payload,
+      );
       Swal.fire({
         icon: "success",
         title: "Sucesso",
-        text: "Movimentação registrada com sucesso!",
+        text: "Produtos transferidos da Garagem com sucesso!",
         confirmButtonColor: "#fbbf24",
       });
       setMostrarModalMovimentacao(false);
@@ -2545,7 +2547,7 @@ export function Dashboard() {
                   </button>
                   <h2 className="text-2xl font-bold mb-4 text-gray-900 flex items-center gap-2">
                     <span className="text-3xl">🔄</span>
-                    Movimentação de Estoque
+                    Transferir produtos da Garagem
                   </h2>
                   <form
                     className="space-y-6"
@@ -2555,16 +2557,17 @@ export function Dashboard() {
                       setMovimentacaoErro("");
                       // Removido setMovimentacaoSucesso (não existe mais)
                       try {
-                        await api.post("/movimentacao-estoque-loja", {
-                          lojaId: movimentacaoLojaId,
-                          // usuarioId: usuario?.id, // Se o backend pegar do token, pode remover isso
+                        await api.post(
+                          "/movimentacao-estoque-loja/transferir-da-garagem",
+                          {
+                          lojaDestinoId: movimentacaoLojaId,
                           produtos: produtosMovimentacao.map((p) => ({
                             produtoId: p.produtoId,
-                            tipoMovimentacao: p.tipoMovimentacao,
                             quantidade: Number(p.quantidade),
                           })),
-                        });
-                        alert("Movimentação registrada com sucesso!");
+                          },
+                        );
+                        alert("Produtos transferidos da Garagem com sucesso!");
                         setMostrarModalMovimentacao(false);
                         setMovimentacaoLojaId("");
                         setProdutosMovimentacao([
@@ -2583,7 +2586,12 @@ export function Dashboard() {
                         setMovimentacaoEnviando(false);
                       }
                     }}
-                  >
+                    >
+                    <div className="rounded-lg border border-purple-200 bg-purple-50 p-3 text-sm text-purple-800">
+                      <strong>Origem:</strong> Garagem — todo produto deve
+                      passar pelo depósito central antes de seguir para uma
+                      loja.
+                    </div>
                     {/* Campo para selecionar a loja */}
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -2596,11 +2604,16 @@ export function Dashboard() {
                         required
                       >
                         <option value="">Selecione a loja</option>
-                        {(lojas || []).map((loja) => (
+                        {(lojas || [])
+                          .filter(
+                            (loja) =>
+                              loja.nome?.trim().toLowerCase() !== "garagem",
+                          )
+                          .map((loja) => (
                           <option key={loja.id} value={loja.id}>
                             {loja.nome}
                           </option>
-                        ))}
+                          ))}
                       </select>
                     </div>
                     {/* O reset dos campos já está dentro do try/catch do onSubmit. */}
@@ -2645,23 +2658,6 @@ export function Dashboard() {
                           required
                           onWheel={(e) => e.target.blur()}
                         />
-
-                        {/* Select de Tipo (Entrada/Saída) */}
-                        <select
-                          value={p.tipoMovimentacao || "saida"}
-                          onChange={(e) =>
-                            handleProdutoChange(
-                              idx,
-                              "tipoMovimentacao",
-                              e.target.value,
-                            )
-                          }
-                          className="input-field w-28"
-                          required
-                        >
-                          <option value="saida">Saída</option>
-                          <option value="entrada">Entrada</option>
-                        </select>
 
                         {/* Botão Remover (X) */}
                         {produtosMovimentacao.length > 1 && (
@@ -2729,7 +2725,7 @@ export function Dashboard() {
                                 d="M5 13l4 4L19 7"
                               />
                             </svg>
-                            Registrar Movimentação
+                            Transferir da Garagem
                           </>
                         )}
                       </button>
