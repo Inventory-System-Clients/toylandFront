@@ -136,9 +136,17 @@ function DepositoCard({ loja, destaque = false, expandido, onToggle }) {
     <section
       className={`overflow-hidden rounded-2xl border-2 shadow-sm ${
         destaque
-          ? "border-primary bg-gradient-to-br from-secondary-dark to-secondary text-white"
+          ? "border-primary text-white"
           : "border-purple-100 bg-white"
       }`}
+      style={
+        destaque
+          ? {
+              background:
+                "linear-gradient(135deg, #4B0053 0%, #63038C 55%, #800080 100%)",
+            }
+          : undefined
+      }
     >
       <button
         type="button"
@@ -307,12 +315,25 @@ export function Estoque() {
         {error && <AlertBox type="error" message={error} />}
 
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-2xl bg-secondary p-5 text-white shadow-lg">
+          <div
+            className="rounded-2xl p-5 text-white shadow-lg"
+            style={{
+              background:
+                "linear-gradient(135deg, #4B0053 0%, #800080 100%)",
+            }}
+          >
             <p className="text-sm text-purple-100">Nos depósitos</p>
             <p className="text-3xl font-black">{totalDepositos}</p>
             <p className="text-xs text-purple-100">unidades disponíveis</p>
           </div>
-          <div className="rounded-2xl bg-primary p-5 text-secondary-dark shadow-lg">
+          <div
+            className="rounded-2xl p-5 shadow-lg"
+            style={{
+              background:
+                "linear-gradient(135deg, #FFD700 0%, #FFEB7A 100%)",
+              color: "#4B0053",
+            }}
+          >
             <p className="text-sm">Nas máquinas</p>
             <p className="text-3xl font-black">{totalMaquinas}</p>
             <p className="text-xs">unidades em operação</p>
