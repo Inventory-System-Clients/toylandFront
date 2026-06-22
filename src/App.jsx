@@ -23,7 +23,7 @@ import { Graficos } from "./pages/Graficos";
 import { Relatorios } from "./pages/Relatorios";
 import { Sangrias } from "./pages/Sangrias";
 import { StyleGuide } from "./pages/StyleGuide";
-import { AnaliseEstoque } from "./pages/AnaliseEstoque";
+import { Estoque } from "./pages/Estoque";
 import "./App.css";
 
 function App() {
@@ -188,12 +188,16 @@ function App() {
             }
           />
           <Route
-            path="/analise-estoque"
+            path="/estoque"
             element={
               <PrivateRoute adminOnly>
-                <AnaliseEstoque />
+                <Estoque />
               </PrivateRoute>
             }
+          />
+          <Route
+            path="/analise-estoque"
+            element={<Navigate to="/estoque" replace />}
           />
           <Route
             path="/manutencao"
