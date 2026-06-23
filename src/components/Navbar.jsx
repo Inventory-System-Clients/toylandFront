@@ -69,6 +69,30 @@ export function Navbar() {
                 >
                   📦 Movimentações
                 </Link>
+                {usuario?.role === "ADMIN" && (
+                  <>
+                    <Link
+                      to="/estoque"
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive("/estoque")
+                          ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg scale-105"
+                          : "text-gray-300 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      📦 Estoque
+                    </Link>
+                    <Link
+                      to="/relatorios"
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive("/relatorios")
+                          ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg scale-105"
+                          : "text-gray-300 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      📄 Relatórios
+                    </Link>
+                  </>
+                )}
                 <Link
                   to="/manutencao"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -132,16 +156,6 @@ export function Navbar() {
                       🚚 Fornecedores
                     </Link>
                     <Link
-                      to="/estoque"
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        isActive("/estoque")
-                          ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg scale-105"
-                          : "text-gray-300 hover:bg-white/10 hover:text-white"
-                      }`}
-                    >
-                      📦 Estoque
-                    </Link>
-                    <Link
                       to="/graficos"
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isActive("/graficos")
@@ -150,16 +164,6 @@ export function Navbar() {
                       }`}
                     >
                       📈 Gráficos
-                    </Link>
-                    <Link
-                      to="/relatorios"
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        isActive("/relatorios")
-                          ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg scale-105"
-                          : "text-gray-300 hover:bg-white/10 hover:text-white"
-                      }`}
-                    >
-                      📄 Relatórios
                     </Link>
                     <Link
                       to="/usuarios"
@@ -282,6 +286,32 @@ export function Navbar() {
             >
               📦 Movimentações
             </Link>
+            {usuario?.role === "ADMIN" && (
+              <>
+                <Link
+                  to="/estoque"
+                  onClick={closeMenu}
+                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    isActive("/estoque")
+                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                      : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  📦 Estoque
+                </Link>
+                <Link
+                  to="/relatorios"
+                  onClick={closeMenu}
+                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    isActive("/relatorios")
+                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                      : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  📄 Relatórios
+                </Link>
+              </>
+            )}
             <Link
               to="/manutencao"
               onClick={closeMenu}
@@ -351,17 +381,6 @@ export function Navbar() {
                   🚚 Fornecedores
                 </Link>
                 <Link
-                  to="/estoque"
-                  onClick={closeMenu}
-                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                    isActive("/estoque")
-                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
-                      : "text-gray-300 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  📦 Estoque
-                </Link>
-                <Link
                   to="/graficos"
                   onClick={closeMenu}
                   className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
@@ -371,17 +390,6 @@ export function Navbar() {
                   }`}
                 >
                   📈 Gráficos
-                </Link>
-                <Link
-                  to="/relatorios"
-                  onClick={closeMenu}
-                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                    isActive("/relatorios")
-                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
-                      : "text-gray-300 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  📄 Relatórios
                 </Link>
                 <Link
                   to="/usuarios"
