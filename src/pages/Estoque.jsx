@@ -404,6 +404,45 @@ export function Estoque() {
     (total, maquina) => total + Number(maquina.estoqueAtual || 0),
     0,
   );
+  const alertasDepositos = useMemo(
+    () =>
+      lojas.flatMap((loja) =>
+        loja.estoque
+          .filter(
+            (item) =>
+              Number(item.estoqueMinimo || 0) > 0 &&
+              Number(item.quantidade || 0) <
+                Number(item.estoqueMinimo || 0),
+          )
+          .map((item) => ({
+            id: `${loja.id}-${item.produtoId}`,
+            lojaNome: ehGaragem(loja) ? "Garagem" : loja.nome,
+            produtoNome: item.produto?.nome || "Produto",
+            quantidade: Number(item.quantidade || 0),
+            minimo: Number(item.estoqueMinimo || 0),
+          })),
+      ),
+    [lojas],
+  );
+  const alertasMaquinas = useMemo(
+    () =>
+      maquinas
+        .filter(
+          (maquina) =>
+            Number(maquina.capacidadePadrao || 0) > 0 &&
+            Number(maquina.estoqueAtual || 0) <
+              Number(maquina.capacidadePadrao || 0),
+        )
+        .map((maquina) => ({
+          ...maquina,
+          lojaNome:
+            lojas.find((loja) => String(loja.id) === String(maquina.lojaId))
+              ?.nome || "Loja não informada",
+        })),
+    [lojas, maquinas],
+  );
+  const possuiAlertas =
+    alertasDepositos.length > 0 || alertasMaquinas.length > 0;
 
   if (loading) return <PageLoader />;
 
@@ -418,6 +457,109 @@ export function Estoque() {
         />
 
         {error && <AlertBox type="error" message={error} />}
+
+        {possuiAlertas && (
+          <section className="mb-8 overflow-hidden rounded-2xl border-2 border-orange-300 bg-white shadow-lg">
+            <div className="flex flex-col gap-3 bg-gradient-to-r from-orange-500 to-red-500 p-4 text-white sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">⚠️</span>
+                <div>
+                  <h2 className="text-lg font-black">Alertas de estoque</h2>
+                  <p className="text-sm text-orange-50">
+                    Existem itens que precisam de reposição.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs font-bold">
+                {alertasDepositos.length > 0 && (
+                  <span className="rounded-full bg-white/20 px-3 py-1.5">
+                    📦 {alertasDepositos.length} no depósito
+                  </span>
+                )}
+                {alertasMaquinas.length > 0 && (
+                  <span className="rounded-full bg-white/20 px-3 py-1.5">
+                    🎮 {alertasMaquinas.length} nas máquinas
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-2">
+              {alertasDepositos.length > 0 && (
+                <div>
+                  <h3 className="mb-3 font-black text-gray-900">
+                    📦 Depósitos abaixo do mínimo
+                  </h3>
+                  <div className="space-y-2">
+                    {alertasDepositos.map((alerta) => (
+                      <div
+                        key={alerta.id}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3"
+                      >
+                        <div>
+                          <p className="font-bold text-gray-900">
+                            {alerta.produtoNome}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {alerta.lojaNome}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-black text-red-600">
+                            {alerta.quantidade} unidades
+                          </p>
+                          <p className="text-xs text-red-700">
+                            mínimo: {alerta.minimo}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {alertasMaquinas.length > 0 && (
+                <div>
+                  <h3 className="mb-3 font-black text-gray-900">
+                    🎮 Máquinas abaixo da capacidade
+                  </h3>
+                  <div className="space-y-2">
+                    {alertasMaquinas.map((maquina) => (
+                      <Link
+                        key={maquina.id}
+                        to={`/maquinas/${maquina.id}`}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-orange-200 bg-orange-50 p-3 transition hover:border-orange-400 hover:shadow-sm"
+                      >
+                        <div>
+                          <p className="font-bold text-gray-900">
+                            {maquina.nome || maquina.codigo}
+                          </p>
+                          <p className="text-xs text-gray-600">
+                            {maquina.lojaNome} · {maquina.codigo}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-black text-orange-700">
+                            {Number(maquina.estoqueAtual || 0)} de{" "}
+                            {Number(maquina.capacidadePadrao || 0)}
+                          </p>
+                          <p className="text-xs text-orange-700">
+                            faltam{" "}
+                            {Math.max(
+                              0,
+                              Number(maquina.capacidadePadrao || 0) -
+                                Number(maquina.estoqueAtual || 0),
+                            )}
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
 
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div
