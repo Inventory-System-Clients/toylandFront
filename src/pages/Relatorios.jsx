@@ -1291,48 +1291,6 @@ export function Relatorios() {
                 Resumo Geral da Loja
               </h3>
               <div className="flex flex-wrap gap-4 sm:gap-4">
-                {/* Valor Vindo da Trocadora */}
-                {/* Dinheiro loja */}
-                {/* Cartão/Pix loja */}
-                <div className="flex flex-col card bg-gradient-to-br from-yellow-500 to-orange-600 text-white items-center justify-center">
-                  <div className="text-2xl sm:text-3xl mb-2">🏪</div>
-                  <div className="text-xl sm:text-2xl font-bold">
-                    R${" "}
-                    {(
-                      Number(relatorio.totais?.valorDinheiroLoja || 0) +
-                      Number(relatorio.totais?.valorCartaoPixLoja || 0)
-                    ).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </div>
-                  <div className="text-xs sm:text-sm opacity-90">
-                    Valor Vindo da Trocadora
-                  </div>
-                  <div className="flex gap-3 items-end">
-                    <div className="flex flex-col items-center">
-                      <div className="text-lg sm:text-xl mb-1">💵</div>
-                      <div className="text-base sm:text-lg font-bold">
-                        R${" "}
-                        {Number(
-                          relatorio.totais?.valorDinheiroLoja || 0,
-                        ).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </div>
-                      <div className="text-[10px] sm:text-xs opacity-80">
-                        Dinheiro
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div className="text-lg sm:text-xl mb-1">🟢</div>
-                      <div className="text-base sm:text-lg font-bold">
-                        R${" "}
-                        {Number(
-                          relatorio.totais?.valorCartaoPixLoja || 0,
-                        ).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                      </div>
-                      <div className="text-[10px] sm:text-xs opacity-80">
-                        Cartão / Pix (Bruto)
-                      </div>
-                    </div>
-                  </div>
-                </div>
                 {/* Valor Bruto das máquinas */}
                 <div className="card bg-gradient-to-br from-yellow-300 to-yellow-600 text-white">
                   <div className="text-2xl sm:text-3xl mb-2">📉</div>
