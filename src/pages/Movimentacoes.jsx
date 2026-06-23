@@ -1936,9 +1936,19 @@ export function Movimentacoes() {
         {usuario?.role === "ADMIN" && (
           <div className="mt-12">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <span className="text-3xl">🏪</span>
-              Movimentações de Estoque de Loja
+              <span className="text-3xl">📚</span>
+              Histórico Geral do Estoque
             </h2>
+            <div className="mb-5 rounded-2xl border border-purple-200 bg-purple-50 p-4 text-sm text-purple-900">
+              <p className="font-bold">
+                Livro completo de entradas e saídas
+              </p>
+              <p className="mt-1">
+                Compras, passagens pela Garagem, transferências para lojas,
+                abastecimentos de máquinas, devoluções e ajustes manuais ficam
+                registrados nesta área.
+              </p>
+            </div>
             {/* Filtros */}
             <div className="mb-5 rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-sm p-4 md:p-5">
               <div className="flex items-center justify-between gap-3 mb-4">
@@ -2022,8 +2032,9 @@ export function Movimentacoes() {
               </div>
 
               <p className="text-xs text-gray-500 mt-3">
-                Sem selecionar datas, a tabela mostra automaticamente apenas os
-                registros de hoje.
+                Sem selecionar datas, a tabela mostra automaticamente somente
+                as movimentações de hoje. Selecione um período para consultar
+                o histórico.
               </p>
             </div>
             <TabelaMovimentacoesEstoqueDeLoja
@@ -2036,7 +2047,10 @@ export function Movimentacoes() {
               filtroResponsavelEstoque={filtroResponsavelEstoque}
               setEditandoEstoqueLoja={setEditandoEstoqueLoja}
               setExcluindoEstoqueLoja={setExcluindoEstoqueLoja}
-              onChangeEstoqueLoja={carregarDados}
+              onChangeEstoqueLoja={() => {
+                carregarDados();
+                carregarMovimentacoesEstoqueLoja();
+              }}
             />
           </div>
         )}
