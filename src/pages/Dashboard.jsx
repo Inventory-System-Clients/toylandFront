@@ -24,6 +24,7 @@ export function Dashboard() {
   const [lojas, setLojas] = useState([]);
   const [maquinas, setMaquinas] = useState([]);
   const [produtos, setProdutos] = useState([]);
+  const [alertasBomDesempenho, setAlertasBomDesempenho] = useState([]);
   // Estado para modal de movimentação de estoque de loja
   const [movimentacaoLojaId, setMovimentacaoLojaId] = useState("");
   const [movimentacaoEnviando, setMovimentacaoEnviando] = useState(false);
@@ -305,125 +306,145 @@ export function Dashboard() {
   const [assistenteContextoPendente, setAssistenteContextoPendente] =
     useState("");
 
-  const normalizarTextoAssistente = useCallback((valor) =>
-    String(valor || "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .trim(), []);
+  const normalizarTextoAssistente = useCallback(
+    (valor) =>
+      String(valor || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim(),
+    [],
+  );
 
   const formatarDataAssistente = (dia, mes, ano) =>
     `${ano}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
 
-  const extrairDatasDaFalaAssistente = useCallback((texto) => {
-    const meses = {
-      janeiro: 1,
-      fevereiro: 2,
-      marco: 3,
-      abril: 4,
-      maio: 5,
-      junho: 6,
-      julho: 7,
-      agosto: 8,
-      setembro: 9,
-      outubro: 10,
-      novembro: 11,
-      dezembro: 12,
-    };
-    const textoNormalizado = normalizarTextoAssistente(texto);
-    const datas = [...textoNormalizado.matchAll(/(\d{1,2})\s+de\s+([a-z]+)(?:\s+de\s+(\d{4}))?/g)];
-    const anoAtual = new Date().getFullYear();
+  const extrairDatasDaFalaAssistente = useCallback(
+    (texto) => {
+      const meses = {
+        janeiro: 1,
+        fevereiro: 2,
+        marco: 3,
+        abril: 4,
+        maio: 5,
+        junho: 6,
+        julho: 7,
+        agosto: 8,
+        setembro: 9,
+        outubro: 10,
+        novembro: 11,
+        dezembro: 12,
+      };
+      const textoNormalizado = normalizarTextoAssistente(texto);
+      const datas = [
+        ...textoNormalizado.matchAll(
+          /(\d{1,2})\s+de\s+([a-z]+)(?:\s+de\s+(\d{4}))?/g,
+        ),
+      ];
+      const anoAtual = new Date().getFullYear();
 
-    if (datas.length < 2) return {};
+      if (datas.length < 2) return {};
 
-    const [inicio, fim] = datas.map((match) => ({
-      dia: Number(match[1]),
-      mes: meses[match[2]],
-      ano: Number(match[3]) || anoAtual,
-    }));
+      const [inicio, fim] = datas.map((match) => ({
+        dia: Number(match[1]),
+        mes: meses[match[2]],
+        ano: Number(match[3]) || anoAtual,
+      }));
 
-    if (!inicio.mes || !fim.mes) return {};
+      if (!inicio.mes || !fim.mes) return {};
 
-    return {
-      dataInicio: formatarDataAssistente(inicio.dia, inicio.mes, inicio.ano),
-      dataFim: formatarDataAssistente(fim.dia, fim.mes, fim.ano),
-    };
-  }, [normalizarTextoAssistente]);
+      return {
+        dataInicio: formatarDataAssistente(inicio.dia, inicio.mes, inicio.ano),
+        dataFim: formatarDataAssistente(fim.dia, fim.mes, fim.ano),
+      };
+    },
+    [normalizarTextoAssistente],
+  );
 
-  const encontrarLojaAssistente = useCallback((texto, resultado) => {
-    const idsPossiveis = [
-      resultado?.acao?.query?.lojaId,
-      resultado?.acao?.query?.loja_id,
-      resultado?.dados?.lojaId,
-      resultado?.dados?.loja_id,
-      resultado?.dados?.loja?.id,
-      resultado?.lojaId,
-      resultado?.loja_id,
-    ].filter(Boolean);
+  const encontrarLojaAssistente = useCallback(
+    (texto, resultado) => {
+      const idsPossiveis = [
+        resultado?.acao?.query?.lojaId,
+        resultado?.acao?.query?.loja_id,
+        resultado?.dados?.lojaId,
+        resultado?.dados?.loja_id,
+        resultado?.dados?.loja?.id,
+        resultado?.lojaId,
+        resultado?.loja_id,
+      ].filter(Boolean);
 
-    if (idsPossiveis.length > 0) {
-      return String(idsPossiveis[0]);
-    }
+      if (idsPossiveis.length > 0) {
+        return String(idsPossiveis[0]);
+      }
 
-    const nomesPossiveis = [
-      resultado?.acao?.query?.loja,
-      resultado?.acao?.query?.lojaNome,
-      resultado?.dados?.lojaNome,
-      resultado?.dados?.loja?.nome,
-      resultado?.lojaNome,
-      texto,
-    ]
-      .filter(Boolean)
-      .map(normalizarTextoAssistente);
+      const nomesPossiveis = [
+        resultado?.acao?.query?.loja,
+        resultado?.acao?.query?.lojaNome,
+        resultado?.dados?.lojaNome,
+        resultado?.dados?.loja?.nome,
+        resultado?.lojaNome,
+        texto,
+      ]
+        .filter(Boolean)
+        .map(normalizarTextoAssistente);
 
-    const textoNormalizado = normalizarTextoAssistente(texto);
+      const textoNormalizado = normalizarTextoAssistente(texto);
 
-    const lojaEncontrada = lojas.find((loja) => {
-      const nomeLoja = normalizarTextoAssistente(loja.nome);
-      const partesNome = nomeLoja
-        .split(/\s+/)
-        .filter((parte) => parte.length >= 4);
+      const lojaEncontrada = lojas.find((loja) => {
+        const nomeLoja = normalizarTextoAssistente(loja.nome);
+        const partesNome = nomeLoja
+          .split(/\s+/)
+          .filter((parte) => parte.length >= 4);
 
-      return (
-        nomesPossiveis.some(
-          (nome) => nome.includes(nomeLoja) || nomeLoja.includes(nome),
-        ) ||
-        partesNome.some((parte) => textoNormalizado.includes(parte))
+        return (
+          nomesPossiveis.some(
+            (nome) => nome.includes(nomeLoja) || nomeLoja.includes(nome),
+          ) || partesNome.some((parte) => textoNormalizado.includes(parte))
+        );
+      });
+
+      return lojaEncontrada?.id ? String(lojaEncontrada.id) : "";
+    },
+    [lojas, normalizarTextoAssistente],
+  );
+
+  const montarFiltrosRelatorioAssistente = useCallback(
+    (resultado, texto) => {
+      const query = resultado?.acao?.query || {};
+      const datasDaFala = extrairDatasDaFalaAssistente(texto);
+
+      return {
+        lojaId:
+          query.lojaId ||
+          query.loja_id ||
+          encontrarLojaAssistente(texto, resultado),
+        dataInicio:
+          query.dataInicio ||
+          query.data_inicio ||
+          resultado?.dados?.dataInicio ||
+          resultado?.dados?.data_inicio ||
+          datasDaFala.dataInicio,
+        dataFim:
+          query.dataFim ||
+          query.data_fim ||
+          resultado?.dados?.dataFim ||
+          resultado?.dados?.data_fim ||
+          datasDaFala.dataFim,
+      };
+    },
+    [encontrarLojaAssistente, extrairDatasDaFalaAssistente],
+  );
+
+  const extrairNumeroMaquinaAssistente = useCallback(
+    (texto) => {
+      const textoNormalizado = normalizarTextoAssistente(texto);
+      const match = textoNormalizado.match(
+        /maquina\s*(?:numero|n|no|#)?\s*(\d+)/,
       );
-    });
-
-    return lojaEncontrada?.id ? String(lojaEncontrada.id) : "";
-  }, [lojas, normalizarTextoAssistente]);
-
-  const montarFiltrosRelatorioAssistente = useCallback((resultado, texto) => {
-    const query = resultado?.acao?.query || {};
-    const datasDaFala = extrairDatasDaFalaAssistente(texto);
-
-    return {
-      lojaId:
-        query.lojaId ||
-        query.loja_id ||
-        encontrarLojaAssistente(texto, resultado),
-      dataInicio:
-        query.dataInicio ||
-        query.data_inicio ||
-        resultado?.dados?.dataInicio ||
-        resultado?.dados?.data_inicio ||
-        datasDaFala.dataInicio,
-      dataFim:
-        query.dataFim ||
-        query.data_fim ||
-        resultado?.dados?.dataFim ||
-        resultado?.dados?.data_fim ||
-        datasDaFala.dataFim,
-    };
-  }, [encontrarLojaAssistente, extrairDatasDaFalaAssistente]);
-
-  const extrairNumeroMaquinaAssistente = useCallback((texto) => {
-    const textoNormalizado = normalizarTextoAssistente(texto);
-    const match = textoNormalizado.match(/maquina\s*(?:numero|n|no|#)?\s*(\d+)/);
-    return match?.[1] || "";
-  }, [normalizarTextoAssistente]);
+      return match?.[1] || "";
+    },
+    [normalizarTextoAssistente],
+  );
 
   const encontrarMaquinaAssistente = useCallback(
     (texto, resultado, lojaId) => {
@@ -436,7 +457,9 @@ export function Dashboard() {
         resultado?.dados?.maquina?.id,
         resultado?.maquinaId,
         resultado?.maquina_id,
-      ].filter((valor) => valor !== undefined && valor !== null && valor !== "");
+      ].filter(
+        (valor) => valor !== undefined && valor !== null && valor !== "",
+      );
 
       if (idsPossiveis.length > 0) {
         return String(idsPossiveis[0]);
@@ -552,7 +575,9 @@ export function Dashboard() {
 
           setAssistenteResultado(resultado);
           setAssistenteStatus("processando");
-          setAssistenteMensagem("A Assistente ToyLand está abrindo a nova movimentação...");
+          setAssistenteMensagem(
+            "A Assistente ToyLand está abrindo a nova movimentação...",
+          );
 
           navigate(`${resultado?.acao?.rota || "/movimentacoes"}?${params}`, {
             state: {
@@ -586,7 +611,9 @@ export function Dashboard() {
 
           setAssistenteResultado(resultado);
           setAssistenteStatus("processando");
-          setAssistenteMensagem("A Assistente ToyLand está abrindo o relatório...");
+          setAssistenteMensagem(
+            "A Assistente ToyLand está abrindo o relatório...",
+          );
 
           const rotaRelatorio = resultado?.acao?.rota || "/relatorios";
           const queryString = params.toString();
@@ -698,7 +725,9 @@ export function Dashboard() {
       recognitionRef.current = null;
       if (!capturouResultado) {
         setAssistenteStatus("idle");
-        setAssistenteMensagem("Clique na Assistente ToyLand e fale um comando.");
+        setAssistenteMensagem(
+          "Clique na Assistente ToyLand e fale um comando.",
+        );
       }
     };
 
@@ -812,6 +841,13 @@ export function Dashboard() {
             console.error("Erro ao carregar balanço:", err.message);
             return { data: null };
           }),
+          api.get("/relatorios/alertas-bom-desempenho").catch((err) => {
+            console.error(
+              "Erro ao carregar alertas de bom desempenho:",
+              err.message,
+            );
+            return { data: { alertas: [] } };
+          }),
         );
       }
 
@@ -821,6 +857,7 @@ export function Dashboard() {
         faturamentoMesAnteriorRes,
         alertasRes,
         balancoRes,
+        bomDesempenhoRes,
         lojasRes,
         maquinasRes,
         produtosRes;
@@ -833,6 +870,7 @@ export function Dashboard() {
           faturamentoMesAnteriorRes,
           alertasRes,
           balancoRes,
+          bomDesempenhoRes,
           lojasRes,
           maquinasRes,
           produtosRes,
@@ -863,6 +901,7 @@ export function Dashboard() {
         [lojasRes, maquinasRes, produtosRes] = resultados;
         alertasRes = { data: { alertas: [] } };
         balancoRes = { data: null };
+        setAlertasBomDesempenho([]);
       }
 
       console.log("Lojas carregadas:", lojasRes.data);
@@ -884,6 +923,7 @@ export function Dashboard() {
         comparativoLucroMensal,
         loading: false,
       });
+      setAlertasBomDesempenho(bomDesempenhoRes?.data?.alertas || []);
       setLojas(lojasRes.data || []);
       setMaquinas(maquinasRes.data || []);
       setProdutos(produtosRes.data || []);
@@ -2089,7 +2129,9 @@ export function Dashboard() {
     ouvindo: `${assistenteNome} ouvindo...`,
     processando: `${assistenteNome} pensando...`,
     erro: `${assistenteNome} nao conseguiu entender`,
-    resposta: assistenteContextoPendente ? `${assistenteNome} complementar` : assistenteNome,
+    resposta: assistenteContextoPendente
+      ? `${assistenteNome} complementar`
+      : assistenteNome,
   }[assistenteStatus];
 
   const assistenteStatusClass =
@@ -2193,9 +2235,7 @@ export function Dashboard() {
                   </div>
                   <p className="text-3xl font-bold">
                     R${" "}
-                    {formatarMoeda(
-                      comparativoLucroMensal?.valorMesAtual ?? 0,
-                    )}
+                    {formatarMoeda(comparativoLucroMensal?.valorMesAtual ?? 0)}
                   </p>
                   {comparativoLucroMensal ? (
                     <>
@@ -2296,6 +2336,45 @@ export function Dashboard() {
                   <p className="text-xs opacity-75 mt-1">
                     ⚠️ {stats.alertas.length} máquinas · 🏪{" "}
                     {alertasEstoqueLoja.length} lojas
+                  </p>
+                </div>
+              </div>
+              {/* Bom Desempenho */}
+              <div
+                className="stat-card bg-linear-to-br from-cyan-500 to-sky-700 p-4 sm:p-6 rounded-xl shadow-md flex flex-col justify-between min-h-30 cursor-pointer"
+                onClick={() => {
+                  const alertSection = document.getElementById(
+                    "alertas-bom-desempenho",
+                  );
+                  if (alertSection) {
+                    alertSection.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}
+              >
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium opacity-90">
+                      Bom Desempenho
+                    </h3>
+                    <svg
+                      className="w-8 h-8 opacity-80"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-3xl font-bold">
+                    {alertasBomDesempenho.length}
+                  </p>
+                  <p className="text-xs opacity-75 mt-1">
+                    🚀 IN acima do esperado
                   </p>
                 </div>
               </div>
@@ -2531,11 +2610,11 @@ export function Dashboard() {
                         await api.post(
                           "/movimentacao-estoque-loja/transferir-da-garagem",
                           {
-                          lojaDestinoId: movimentacaoLojaId,
-                          produtos: produtosMovimentacao.map((p) => ({
-                            produtoId: p.produtoId,
-                            quantidade: Number(p.quantidade),
-                          })),
+                            lojaDestinoId: movimentacaoLojaId,
+                            produtos: produtosMovimentacao.map((p) => ({
+                              produtoId: p.produtoId,
+                              quantidade: Number(p.quantidade),
+                            })),
                           },
                         );
                         alert("Produtos transferidos da Garagem com sucesso!");
@@ -2557,7 +2636,7 @@ export function Dashboard() {
                         setMovimentacaoEnviando(false);
                       }
                     }}
-                    >
+                  >
                     <div className="rounded-lg border border-purple-200 bg-purple-50 p-3 text-sm text-purple-800">
                       <strong>Origem:</strong> Garagem — todo produto deve
                       passar pelo depósito central antes de seguir para uma
@@ -2581,9 +2660,9 @@ export function Dashboard() {
                               loja.nome?.trim().toLowerCase() !== "garagem",
                           )
                           .map((loja) => (
-                          <option key={loja.id} value={loja.id}>
-                            {loja.nome}
-                          </option>
+                            <option key={loja.id} value={loja.id}>
+                              {loja.nome}
+                            </option>
                           ))}
                       </select>
                     </div>
@@ -3994,6 +4073,72 @@ export function Dashboard() {
           </div>
         )}
 
+        {usuario?.role === "ADMIN" && alertasBomDesempenho.length > 0 && (
+          <div
+            className="card mb-8 border-l-4 border-cyan-500"
+            id="alertas-bom-desempenho"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <span className="bg-cyan-100 p-2 rounded-lg">🚀</span>
+                Alertas de Bom Desempenho
+              </h2>
+              <span className="badge bg-cyan-100 text-cyan-700 border-cyan-300">
+                {alertasBomDesempenho.length}{" "}
+                {alertasBomDesempenho.length === 1 ? "alerta" : "alertas"}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {alertasBomDesempenho.slice(0, 5).map((alerta) => (
+                <div
+                  key={alerta.id}
+                  className="p-5 rounded-xl bg-cyan-50 border border-cyan-200 shadow-sm"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-bold text-lg text-gray-900">
+                          {alerta.maquinaNome}
+                        </span>
+                        {alerta.lojaNome && (
+                          <span className="text-sm text-gray-600">
+                            - {alerta.lojaNome}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-700">
+                        IN atual: <strong>{alerta.contador_in}</strong> ·
+                        esperado: <strong>{alerta.expectedDiff}</strong>
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        Saíram: <strong>{alerta.sairam}</strong> · Valor ficha:{" "}
+                        <strong>
+                          R$ {Number(alerta.valorFicha).toFixed(2)}
+                        </strong>{" "}
+                        · Jogadas boas:{" "}
+                        <strong>{alerta.jogadasBoasPorPelucia}</strong>
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold text-cyan-800">
+                        +R$ {Number(alerta.diferenca || 0).toFixed(2)}
+                      </p>
+                      <p className="text-xs text-cyan-700 mt-1">
+                        Acima do esperado
+                      </p>
+                    </div>
+                  </div>
+                  {alerta.mensagem && (
+                    <p className="text-sm text-gray-600 mt-3 italic">
+                      {alerta.mensagem}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Alertas de Estoque de Lojas - Apenas para ADMIN */}
         {usuario?.role === "ADMIN" && alertasEstoqueLoja.length > 0 && (
           <div className="card mb-8 border-l-4 border-orange-500">
@@ -4239,9 +4384,7 @@ export function Dashboard() {
                       <td>
                         <span className="badge bg-purple-50 text-purple-700 border-purple-200">
                           R${" "}
-                          {Number(
-                            loja.mediaFaturamentoPremio ?? 0,
-                          ).toFixed(2)}
+                          {Number(loja.mediaFaturamentoPremio ?? 0).toFixed(2)}
                         </span>
                       </td>
                       <td>

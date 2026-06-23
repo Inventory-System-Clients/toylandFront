@@ -19,6 +19,7 @@ export function MaquinaForm() {
     tipo: "",
     capacidadePadrao: "",
     valorFicha: "",
+    jogadasBoasPorPelucia: "",
     fichasNecessarias: "",
     forcaForte: "",
     forcaFraca: "",
@@ -52,7 +53,7 @@ export function MaquinaForm() {
     } catch (error) {
       setError(
         "Erro ao carregar lojas: " +
-          (error.response?.data?.error || error.message)
+          (error.response?.data?.error || error.message),
       );
     }
   };
@@ -69,6 +70,7 @@ export function MaquinaForm() {
         tipo: response.data.tipo || "",
         capacidadePadrao: response.data.capacidadePadrao || "",
         valorFicha: response.data.valorFicha || "",
+        jogadasBoasPorPelucia: response.data.jogadasBoasPorPelucia || "",
         fichasNecessarias: response.data.fichasNecessarias || "",
         forcaForte: response.data.forcaForte || "",
         forcaFraca: response.data.forcaFraca || "",
@@ -81,7 +83,7 @@ export function MaquinaForm() {
     } catch (error) {
       setError(
         "Erro ao carregar máquina: " +
-          (error.response?.data?.error || error.message)
+          (error.response?.data?.error || error.message),
       );
     } finally {
       setLoadingData(false);
@@ -109,7 +111,7 @@ export function MaquinaForm() {
         "loja_id:",
         formData.loja_id,
         "tipo:",
-        typeof formData.loja_id
+        typeof formData.loja_id,
       ); // Debug
 
       if (!formData.loja_id || formData.loja_id === "") {
@@ -132,6 +134,10 @@ export function MaquinaForm() {
         tipo: formData.tipo?.trim() || null,
         capacidadePadrao: parseInt(formData.capacidadePadrao, 10) || 0,
         valorFicha: parseFloat(formData.valorFicha) || 0,
+        jogadasBoasPorPelucia:
+          formData.jogadasBoasPorPelucia !== ""
+            ? parseFloat(formData.jogadasBoasPorPelucia)
+            : null,
         fichasNecessarias: null,
         forcaForte: parseInt(formData.forcaForte, 10) || null,
         forcaFraca: parseInt(formData.forcaFraca, 10) || null,
@@ -354,6 +360,26 @@ export function MaquinaForm() {
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Valor cobrado por jogada
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Jogadas boas por pelúcia
+                  </label>
+                  <input
+                    type="number"
+                    name="jogadasBoasPorPelucia"
+                    value={formData.jogadasBoasPorPelucia}
+                    onChange={handleChange}
+                    className="input-field"
+                    placeholder="Ex: 10"
+                    min="0"
+                    step="1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Quantas jogadas, em média, a máquina precisa para soltar uma
+                    pelúcia.
                   </p>
                 </div>
 
