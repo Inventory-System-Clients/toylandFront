@@ -122,6 +122,16 @@ export function Navbar() {
                 {usuario?.role === "ADMIN" && (
                   <>
                     <Link
+                      to="/fornecedores"
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        isActive("/fornecedores")
+                          ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg scale-105"
+                          : "text-gray-300 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      🚚 Fornecedores
+                    </Link>
+                    <Link
                       to="/estoque"
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         isActive("/estoque")
@@ -329,6 +339,17 @@ export function Navbar() {
             </Link>
             {usuario?.role === "ADMIN" && (
               <>
+                <Link
+                  to="/fornecedores"
+                  onClick={closeMenu}
+                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    isActive("/fornecedores")
+                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                      : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  🚚 Fornecedores
+                </Link>
                 <Link
                   to="/estoque"
                   onClick={closeMenu}

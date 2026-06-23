@@ -24,6 +24,8 @@ import { Relatorios } from "./pages/Relatorios";
 import { Sangrias } from "./pages/Sangrias";
 import { StyleGuide } from "./pages/StyleGuide";
 import { Estoque } from "./pages/Estoque";
+import { Fornecedores } from "./pages/Fornecedores";
+import { FornecedorForm } from "./pages/FornecedorForm";
 import "./App.css";
 
 function App() {
@@ -184,6 +186,30 @@ function App() {
             element={
               <PrivateRoute>
                 <Movimentacoes />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/fornecedores"
+            element={
+              <PrivateRoute adminOnly>
+                <Fornecedores />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/fornecedores/novo"
+            element={
+              <PrivateRoute adminOnly>
+                <FornecedorForm />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/fornecedores/:id/editar"
+            element={
+              <PrivateRoute adminOnly>
+                <FornecedorForm />
               </PrivateRoute>
             }
           />
