@@ -1047,6 +1047,14 @@ export function Relatorios() {
       try {
         const gastosFixosResponse = await api.get(
           `/gastos-fixos-loja/${lojaSelecionada}`,
+          {
+            params: dataInicio
+              ? {
+                  ano: Number(dataInicio.slice(0, 4)),
+                  mes: Number(dataInicio.slice(5, 7)),
+                }
+              : undefined,
+          },
         );
         listaGastosFixos = Array.isArray(gastosFixosResponse.data)
           ? gastosFixosResponse.data

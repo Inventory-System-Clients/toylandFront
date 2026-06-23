@@ -10,6 +10,10 @@ export function LojaForm() {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEdit = !!id;
+  const agora = new Date();
+  const mesAtual = `${agora.getFullYear()}-${String(
+    agora.getMonth() + 1,
+  ).padStart(2, "0")}`;
 
   const [formData, setFormData] = useState({
     nome: "",
@@ -104,6 +108,11 @@ export function LojaForm() {
   const [gastosFixos, setGastosFixos] = useState(
     GASTOS_FIXOS.map((g) => ({ nome: g.nome, valor: "", observacao: "" })),
   );
+  const [mesGastosFixos, setMesGastosFixos] = useState(mesAtual);
+  const [alcanceGastosFixos, setAlcanceGastosFixos] = useState(
+    "deste_mes_em_diante",
+  );
+  const [loadingGastosFixos, setLoadingGastosFixos] = useState(false);
 
   // Estados para gerenciar estoque do depósito
   const [produtos, setProdutos] = useState([]);
@@ -132,11 +141,15 @@ export function LojaForm() {
       carregarGastosFixos();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEdit]);
+  }, [isEdit, mesGastosFixos]);
   // Função para carregar gastos fixos do backend
   const carregarGastosFixos = async () => {
     try {
-      const response = await api.get(`/gastos-fixos-loja/${id}`);
+      setLoadingGastosFixos(true);
+      const [ano, mes] = mesGastosFixos.split("-").map(Number);
+      const response = await api.get(`/gastos-fixos-loja/${id}`, {
+        params: { ano, mes },
+      });
       const gastosSalvos = Array.isArray(response.data) ? response.data : [];
       setGastosFixos(
         gastosSalvos.length > 0
@@ -156,6 +169,8 @@ export function LojaForm() {
       setGastosFixos(
         GASTOS_FIXOS.map((g) => ({ nome: g.nome, valor: "", observacao: "" })),
       );
+    } finally {
+      setLoadingGastosFixos(false);
     }
   };
 
@@ -263,9 +278,13 @@ export function LojaForm() {
       };
 
       if (isEdit) {
+        const [anoGasto, mesGasto] = mesGastosFixos.split("-").map(Number);
         await api.put(`/lojas/${id}`, data);
         setSuccess("Loja atualizada com sucesso!");
         await api.post(`/gastos-fixos-loja/${id}`, {
+          ano: anoGasto,
+          mes: mesGasto,
+          alcance: alcanceGastosFixos,
           gastos: gastosFixos
             .filter((gasto) => gasto.nome.trim())
             .map((g) => ({
@@ -278,7 +297,11 @@ export function LojaForm() {
         const response = await api.post("/lojas", data);
         const novaLojaId = response.data?.id;
         if (novaLojaId) {
+          const [anoGasto, mesGasto] = mesGastosFixos.split("-").map(Number);
           await api.post(`/gastos-fixos-loja/${novaLojaId}`, {
+            ano: anoGasto,
+            mes: mesGasto,
+            alcance: alcanceGastosFixos,
             gastos: gastosFixos
               .filter((gasto) => gasto.nome.trim())
               .map((gasto) => ({
@@ -452,6 +475,44 @@ export function LojaForm() {
                   + Adicionar gasto fixo
                 </button>
               </div>
+              <div className="mb-5 grid grid-cols-1 gap-4 rounded-xl border border-purple-100 bg-purple-50/70 p-4 md:grid-cols-2">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Mês de referência
+                  <input
+                    type="month"
+                    className="input-field mt-1"
+                    value={mesGastosFixos}
+                    onChange={(e) => setMesGastosFixos(e.target.value)}
+                    required
+                  />
+                </label>
+                <label className="block text-sm font-semibold text-gray-700">
+                  Aplicar alteração
+                  <select
+                    className="input-field mt-1"
+                    value={alcanceGastosFixos}
+                    onChange={(e) => setAlcanceGastosFixos(e.target.value)}
+                  >
+                    <option value="deste_mes_em_diante">
+                      Neste mês e nos próximos
+                    </option>
+                    <option value="somente_mes">Somente neste mês</option>
+                    <option value="mes_anterior_e_seguintes">
+                      Mês anterior, este mês e próximos
+                    </option>
+                  </select>
+                </label>
+                <p className="text-xs leading-relaxed text-gray-600 md:col-span-2">
+                  Os valores continuam automaticamente nos próximos meses até
+                  uma nova alteração. “Somente neste mês” cria uma exceção sem
+                  mudar os demais meses.
+                </p>
+              </div>
+              {loadingGastosFixos && (
+                <div className="mb-4 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-purple-700 shadow-sm">
+                  Carregando gastos do mês selecionado...
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {gastosFixos.map((gasto, idx) => (
                   <div
