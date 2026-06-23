@@ -124,10 +124,7 @@ export function Movimentacoes() {
   // Edição
   const [editandoMovimentacao, setEditandoMovimentacao] = useState(null);
   const [formEdicao, setFormEdicao] = useState({
-    fichas: "",
     abastecidas: "",
-    quantidade_notas_entrada: "",
-    valor_entrada_maquininha_pix: "",
   });
 
   // Formulário Nova Movimentação
@@ -306,16 +303,6 @@ export function Movimentacoes() {
       ? Math.max(0, capacidade - quantidadeAtual)
       : null;
 
-    const contadorInAtual = Number(formData.contadorIn);
-    const contadorInAnterior = Number(ultimaMovimentacaoMaquina.contadorIn);
-    const fichasPeloContador =
-      formData.contadorIn !== "" &&
-      Number.isFinite(contadorInAtual) &&
-      Number.isFinite(contadorInAnterior) &&
-      contadorInAtual >= contadorInAnterior
-        ? contadorInAtual - contadorInAnterior
-        : null;
-
     return {
       capacidade: Number.isFinite(capacidade) ? capacidade : null,
       contadorOutAnterior,
@@ -323,10 +310,8 @@ export function Movimentacoes() {
       saidasPeloContador,
       quantidadeAtual,
       quantidadeSugerida,
-      fichasPeloContador,
     };
   }, [
-    formData.contadorIn,
     formData.contadorOut,
     maquinaSelecionada,
     ultimaMovimentacaoMaquina,
@@ -342,10 +327,6 @@ export function Movimentacoes() {
         sugestaoMovimentacao.quantidadeSugerida === null
           ? prev.quantidadeAdicionada
           : String(sugestaoMovimentacao.quantidadeSugerida),
-      fichas:
-        sugestaoMovimentacao.fichasPeloContador === null
-          ? prev.fichas
-          : String(sugestaoMovimentacao.fichasPeloContador),
     }));
   }, [sugestaoMovimentacao]);
 
@@ -778,7 +759,6 @@ export function Movimentacoes() {
 
       // Converter valores do formulário
       const totalPre = parseInt(formData.quantidadeAtualMaquina) || 0; // valor digitado pelo usuário
-      const fichas = parseInt(formData.fichas) || 0;
 
       // totalPos = totalPre + abastecidas - retiradaProduto
       const retiradaProduto = parseInt(formData.retiradaProduto) || 0;
@@ -817,14 +797,7 @@ export function Movimentacoes() {
       console.log("   📌 Calculado que saiu (sairam):", quantidadeSaiu);
       console.log("   📌 Novo total (totalPos):", totalPos);
 
-      // Preparar observação
       let observacaoFinal = formData.observacao?.trim() || "";
-      if (formData.retiradaEstoque) {
-        const notaRetirada = "⚠️ RETIRADA DE ESTOQUE - NÃO É VENDA";
-        observacaoFinal = observacaoFinal
-          ? `${notaRetirada}. ${observacaoFinal}`
-          : notaRetirada;
-      }
 
       // Transformar para o formato do backend
       const data = {
@@ -833,16 +806,12 @@ export function Movimentacoes() {
         sairam: quantidadeSaiu,
         abastecidas: quantidadeAdicionada,
         totalPos: totalPos,
-        fichas: fichas,
+        fichas: 0,
         contadorIn: parseInt(formData.contadorIn) || null,
         contadorOut: parseInt(formData.contadorOut) || null,
-        quantidade_notas_entrada: formData.quantidade_notas_entrada
-          ? parseFloat(formData.quantidade_notas_entrada)
-          : null,
-        valor_entrada_maquininha_pix: formData.valor_entrada_maquininha_pix
-          ? parseFloat(formData.valor_entrada_maquininha_pix)
-          : null,
-        retiradaEstoque: formData.retiradaEstoque,
+        quantidade_notas_entrada: null,
+        valor_entrada_maquininha_pix: null,
+        retiradaEstoque: false,
         contadorMaquina: null,
         observacoes: observacaoFinal || null,
         produtos: [
@@ -958,37 +927,21 @@ export function Movimentacoes() {
   const iniciarEdicao = (movimentacao) => {
     setEditandoMovimentacao(movimentacao);
     setFormEdicao({
-      fichas: movimentacao.fichas || 0,
       abastecidas: movimentacao.abastecidas || 0,
-      quantidade_notas_entrada: movimentacao.quantidade_notas_entrada || "",
-      valor_entrada_maquininha_pix:
-        movimentacao.valor_entrada_maquininha_pix || "",
     });
   };
 
   const cancelarEdicao = () => {
     setEditandoMovimentacao(null);
     setFormEdicao({
-      fichas: "",
       abastecidas: "",
-      quantidade_notas_entrada: "",
-      valor_entrada_maquininha_pix: "",
     });
   };
 
   const salvarEdicao = async () => {
     try {
       await api.put(`/movimentacoes/${editandoMovimentacao.id}`, {
-        fichas: parseInt(formEdicao.fichas) || 0,
         abastecidas: parseInt(formEdicao.abastecidas) || 0,
-        quantidade_notas_entrada:
-          formEdicao.quantidade_notas_entrada !== ""
-            ? parseFloat(formEdicao.quantidade_notas_entrada)
-            : null,
-        valor_entrada_maquininha_pix:
-          formEdicao.valor_entrada_maquininha_pix !== ""
-            ? parseFloat(formEdicao.valor_entrada_maquininha_pix)
-            : null,
       });
       setSuccess("Movimentação atualizada com sucesso!");
       cancelarEdicao();
@@ -1069,17 +1022,11 @@ export function Movimentacoes() {
     mensagem += `->  *Quantidade atual na máquina:* ${totalPre}\n`;
     mensagem += `->  *Quantidade adicionada:* ${quantidadeAdicionada}\n`;
     mensagem += `->  *Total após abastecimento:* ${totalPos}\n`;
-    mensagem += `->  *Fichas:* ${formData.fichas || "0"}\n`;
 
     if (retiradaProduto > 0) {
       mensagem += `\n━━━━━━━━━━━━━━━━━━━━\n`;
       mensagem += `->  *Retirada de produto:* ${retiradaProduto}\n`;
       mensagem += `->  *Devolvido ao estoque:* ${formData.retiradaProdutoDevolverEstoque ? "Sim ✅" : "Não ❌"}\n`;
-    }
-
-    if (formData.retiradaEstoque) {
-      mensagem += `\n━━━━━━━━━━━━━━━━━━━━\n`;
-      mensagem += `-> *Retirada de estoque (não é venda)*\n`;
     }
 
     if (formData.observacao?.trim()) {
@@ -1229,16 +1176,6 @@ export function Movimentacoes() {
           <span className="font-bold text-green-600">
             {mov.abastecidas > 0 ? `+${mov.abastecidas}` : "-"}
           </span>
-        </div>
-      ),
-    },
-    {
-      key: "fichas",
-      label: "Fichas",
-      render: (mov) => (
-        <div className="flex items-center gap-1">
-          <span className="text-lg">🎫</span>
-          <span className="font-semibold text-blue-600">{mov.fichas || 0}</span>
         </div>
       ),
     },
@@ -1873,7 +1810,7 @@ export function Movimentacoes() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="rounded-lg bg-white p-3 shadow-sm">
                         <p className="text-xs font-semibold uppercase text-gray-500">
                           Tem na máquina
@@ -1894,17 +1831,6 @@ export function Movimentacoes() {
                         </p>
                         <p className="text-xs text-secondary-dark/80">
                           para voltar ao padrão
-                        </p>
-                      </div>
-                      <div className="rounded-lg bg-white p-3 shadow-sm">
-                        <p className="text-xs font-semibold uppercase text-gray-500">
-                          Fichas no período
-                        </p>
-                        <p className="mt-1 text-3xl font-black text-secondary">
-                          {sugestaoMovimentacao.fichasPeloContador ?? "—"}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          diferença do contador IN
                         </p>
                       </div>
                     </div>
@@ -1997,24 +1923,6 @@ export function Movimentacoes() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    🎫 Quantidade de Fichas
-                  </label>
-                  <input
-                    type="number"
-                    name="fichas"
-                    value={formData.fichas}
-                    onChange={handleChange}
-                    className="input-field"
-                    placeholder="0"
-                    min="0"
-                    disabled={formData.retiradaEstoque}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Fichas coletadas da máquina
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     ❌ Retirada de Produto
                   </label>
                   <input
@@ -2043,66 +1951,6 @@ export function Movimentacoes() {
                     </span>
                   </label>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    💵 Valor em Notas (R$)
-                  </label>
-                  <input
-                    type="number"
-                    name="quantidade_notas_entrada"
-                    value={formData.quantidade_notas_entrada}
-                    onChange={handleChange}
-                    className="input-field"
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Valor total em dinheiro (notas) inserido na máquina
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    💳 Valor Digital (Pix/Maquininha) (R$)
-                  </label>
-                  <input
-                    type="number"
-                    name="valor_entrada_maquininha_pix"
-                    value={formData.valor_entrada_maquininha_pix}
-                    onChange={handleChange}
-                    className="input-field"
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Valor total recebido via pagamento digital (Pix/Maquininha)
-                  </p>
-                </div>
-              </div>
-
-              {/* Checkbox de Retirada de Estoque */}
-              <div className="p-4 bg-linear-to-r from-orange-50 to-yellow-50 border-2 border-orange-200 rounded-lg">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="retiradaEstoque"
-                    checked={formData.retiradaEstoque}
-                    onChange={handleChange}
-                    className="w-5 h-5 text-orange-600 bg-gray-100 border-gray-300 rounded focus:ring-orange-500 focus:ring-2 cursor-pointer"
-                  />
-                  <div className="flex-1">
-                    <span className="text-sm font-bold text-orange-900">
-                      📦 Retirada de Estoque (não conta como dinheiro)
-                    </span>
-                    <p className="text-xs text-orange-700 mt-1">
-                      Marque esta opção quando estiver retirando produtos da
-                      máquina sem que seja uma venda (exemplo: produtos
-                      danificados, devolução, transferência). As fichas serão
-                      automaticamente zeradas.
-                    </p>
-                  </div>
-                </label>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2684,22 +2532,6 @@ export function Movimentacoes() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    🎫 Quantidade de Fichas
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formEdicao.fichas}
-                    onChange={(e) =>
-                      setFormEdicao({ ...formEdicao, fichas: e.target.value })
-                    }
-                    className="input-field"
-                    placeholder="0"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     📦 Quantidade Abastecida
                   </label>
                   <input
@@ -2717,43 +2549,6 @@ export function Movimentacoes() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    💵 Quantidade de Notas
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formEdicao.quantidade_notas_entrada}
-                    onChange={(e) =>
-                      setFormEdicao({
-                        ...formEdicao,
-                        quantidade_notas_entrada: e.target.value,
-                      })
-                    }
-                    className="input-field"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    💳 Valor Digital (Pix/Maquininha) (R$)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formEdicao.valor_entrada_maquininha_pix}
-                    onChange={(e) =>
-                      setFormEdicao({
-                        ...formEdicao,
-                        valor_entrada_maquininha_pix: e.target.value,
-                      })
-                    }
-                    className="input-field"
-                    placeholder="0.00"
-                  />
-                </div>
                 <div className="flex gap-3 pt-4">
                   <button
                     onClick={cancelarEdicao}

@@ -12,7 +12,6 @@ const TODAS_LOJAS_VALUE = "__TODAS_AS_LOJAS__";
 
 export function Relatorios() {
   const location = useLocation();
-  const [dashboard, setDashboard] = useState(null);
   const [lojas, setLojas] = useState([]);
   const [usuariosMap, setUsuariosMap] = useState({});
   const [lojaSelecionada, setLojaSelecionada] = useState("");
@@ -28,23 +27,6 @@ export function Relatorios() {
   const [salvandoFechamento, setSalvandoFechamento] = useState(false);
   const [relatorioAssistentePendente, setRelatorioAssistentePendente] =
     useState(null);
-
-  // Buscar dados do dashboard para fichas corretas
-  const carregarDashboard = async (lojaId, dataInicio, dataFim) => {
-    try {
-      const response = await api.get("/relatorios/dashboard", {
-        params: {
-          lojaId,
-          dataInicio,
-          dataFim,
-        },
-      });
-      setDashboard(response.data);
-    } catch (error) {
-      console.error("Erro ao carregar dashboard:", error);
-      setDashboard(null);
-    }
-  };
 
   useEffect(() => {
     carregarLojas();
@@ -701,7 +683,6 @@ export function Relatorios() {
       setLoading(true);
       setError("");
       setRelatorio(null); // Limpar relatório anterior
-      setDashboard(null);
       setGastosFixosLoja([]);
       setComparativoMensal(null);
 
@@ -824,8 +805,6 @@ export function Relatorios() {
         return inicioA <= fimB && fimA >= inicioB;
       };
 
-      // Buscar dashboard para fichas corretas
-      await carregarDashboard(lojaSelecionada, dataInicio, dataFim);
 
       // Usar a rota correta para relatório detalhado (produtos que saíram/entraram)
       const response = await api.get("/relatorios/impressao", {
@@ -1099,7 +1078,6 @@ export function Relatorios() {
 
       setError(errorMessage);
       setRelatorio(null);
-      setDashboard(null);
       setGastosFixosLoja([]);
       setComparativoMensal(null);
     } finally {
@@ -1306,12 +1284,6 @@ export function Relatorios() {
                 </p>
               </div>
             )}
-            {/* Aviso de diferença de fichas */}
-            {relatorio.avisoFichas && (
-              <div className="p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-900 rounded mb-4">
-                <strong>Aviso:</strong> {relatorio.avisoFichas}
-              </div>
-            )}
             {/* Cards de Totais Gerais */}
             <div className="card bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-300">
               <h3 className="text-lg sm:text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -1319,40 +1291,6 @@ export function Relatorios() {
                 Resumo Geral da Loja
               </h3>
               <div className="flex flex-wrap gap-4 sm:gap-4">
-                {/* Quantidade de Fichas (DASHBOARD) */}
-                {/* Valor das Fichas (Dashboard) */}
-                <div className="card bg-gradient-to-br from-blue-400 to-blue-600 text-white">
-                  <div className="text-2xl sm:text-3xl mb-2">🎟️</div>
-                  <div className="text-xl sm:text-2xl font-bold">
-                    {dashboard && dashboard.totais
-                      ? Number(dashboard.totais.fichas || 0).toLocaleString(
-                          "pt-BR",
-                        )
-                      : "-"}
-                  </div>
-                  <div className="text-xs sm:text-sm opacity-90">
-                    Quantidade de Fichas
-                  </div>
-                  <div className="text-2xl sm:text-3xl mb-2">💸</div>
-                  <div className="text-xl sm:text-2xl font-bold">
-                    ${" "}
-                    {(() => {
-                      const totalFichas = relatorio.totais?.fichas || 0;
-                      const valorFicha = toNumber(
-                        relatorio.loja?.valorFichaPadrao ??
-                          obterValorFichaPadraoDaLojaSelecionada(),
-                      );
-                      return (totalFichas * valorFicha).toLocaleString(
-                        "pt-BR",
-                        { minimumFractionDigits: 2 },
-                      );
-                    })()}
-                  </div>
-                  <div className="text-xs sm:text-sm opacity-90">
-                    Valor das Fichas (Dashboard)
-                  </div>
-                </div>
-
                 {/* Valor Vindo da Trocadora */}
                 {/* Dinheiro loja */}
                 {/* Cartão/Pix loja */}

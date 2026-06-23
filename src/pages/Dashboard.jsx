@@ -2194,7 +2194,7 @@ export function Dashboard() {
                   <p className="text-3xl font-bold">
                     R${" "}
                     {formatarMoeda(
-                      stats.balanco?.totais?.totalFaturamento || 0,
+                      comparativoLucroMensal?.valorMesAtual ?? 0,
                     )}
                   </p>
                   {comparativoLucroMensal ? (
@@ -2228,35 +2228,6 @@ export function Dashboard() {
                   ) : (
                     <p className="text-xs opacity-75 mt-1">💰 Mês atual</p>
                   )}
-                </div>
-              </div>
-              {/* Fichas Inseridas */}
-              <div className="stat-card bg-linear-to-br from-blue-500 to-blue-600 p-4 sm:p-6 rounded-xl shadow-md flex flex-col justify-between min-h-30">
-                <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-medium opacity-90">
-                      Fichas Inseridas
-                    </h3>
-                    <svg
-                      className="w-8 h-8 opacity-80"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                      />
-                    </svg>
-                  </div>
-                  <p className="text-3xl font-bold">
-                    {stats.balanco?.totais?.totalFichas || 0}
-                  </p>
-                  <p className="text-xs opacity-75 mt-1">
-                    🎫 Fichas que entraram
-                  </p>
                 </div>
               </div>
               {/* Prêmios Saídos */}
@@ -4180,7 +4151,7 @@ export function Dashboard() {
                             clipRule="evenodd"
                           />
                         </svg>
-                        Fichas
+                        Faturamento Máquinas
                       </div>
                     </th>
                     <th>
@@ -4221,7 +4192,7 @@ export function Dashboard() {
                         >
                           <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
                         </svg>
-                        Média F/P
+                        Média R$/Prêmio
                       </div>
                     </th>
                     <th>
@@ -4248,8 +4219,11 @@ export function Dashboard() {
                         </div>
                       </td>
                       <td>
-                        <span className="badge bg-blue-50 text-blue-700 border-blue-200">
-                          {loja.fichas}
+                        <span className="font-bold text-blue-700">
+                          R${" "}
+                          {Number(
+                            loja.faturamentoMaquinas ?? loja.faturamento ?? 0,
+                          ).toFixed(2)}
                         </span>
                       </td>
                       <td>
@@ -4264,7 +4238,10 @@ export function Dashboard() {
                       </td>
                       <td>
                         <span className="badge bg-purple-50 text-purple-700 border-purple-200">
-                          {loja.mediaFichasPremio}
+                          R${" "}
+                          {Number(
+                            loja.mediaFaturamentoPremio ?? 0,
+                          ).toFixed(2)}
                         </span>
                       </td>
                       <td>
