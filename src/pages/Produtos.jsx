@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { Navbar } from "../components/Navbar";
@@ -26,11 +26,7 @@ export function Produtos() {
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [mostrarInativos, setMostrarInativos] = useState(false);
 
-  useEffect(() => {
-    carregarProdutos();
-  }, [mostrarInativos]); // Recarrega quando o filtro muda
-
-  const carregarProdutos = async () => {
+  const carregarProdutos = useCallback(async () => {
     try {
       setLoading(true);
       const urlProdutos = mostrarInativos
@@ -46,7 +42,11 @@ export function Produtos() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [mostrarInativos]);
+
+  useEffect(() => {
+    carregarProdutos();
+  }, [carregarProdutos]); // Recarrega quando o filtro muda
 
   const handleDelete = async () => {
     try {
@@ -143,10 +143,10 @@ export function Produtos() {
     },
     {
       key: "jogadas_2_50",
-      label: "💰 Jogadas R$ 2,50",
+      label: "💰 Lucro 3x R$ 2,50",
       render: (produto) => {
         const preco = Number(produto.preco || 0);
-        const jogadas = Math.ceil(preco / 2.5);
+        const jogadas = Math.ceil((preco * 3) / 2.5);
         return (
           <div className="text-center">
             <span className="font-bold text-green-600 text-lg">{jogadas}</span>
@@ -159,10 +159,10 @@ export function Produtos() {
     },
     {
       key: "jogadas_5_00",
-      label: "💎 Jogadas R$ 5,00",
+      label: "💎 Lucro 3x R$ 5,00",
       render: (produto) => {
         const preco = Number(produto.preco || 0);
-        const jogadas = Math.ceil(preco / 5);
+        const jogadas = Math.ceil((preco * 3) / 5);
         return (
           <div className="text-center">
             <span className="font-bold text-blue-600 text-lg">{jogadas}</span>

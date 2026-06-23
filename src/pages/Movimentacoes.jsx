@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../services/api";
 import { Navbar } from "../components/Navbar";
@@ -15,6 +15,44 @@ import { useAuth } from "../contexts/AuthContext";
 import AvisosMaquinasFaltam from "../components/AvisosMaquinasFaltam";
 import TabelaMovimentacoesEstoqueDeLoja from "../components/TabelaMovimentacoesEstoqueDeLoja";
 
+const TIPOS_GASTOS_VARIAVEIS_PADRAO = [
+  "Material de limpeza",
+  "Manutenção",
+  "Transporte",
+  "Pedágio",
+  "Combustível",
+  "Compra emergencial",
+  "Taxa bancária",
+  "Frete",
+];
+
+const obterDataHojeInput = () => {
+  const hoje = new Date();
+  const pad = (numero) => String(numero).padStart(2, "0");
+  return `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}-${pad(
+    hoje.getDate(),
+  )}`;
+};
+
+const formatarMoeda = (valor) =>
+  Number(valor || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+
+const formatarDataHora = (valor) => {
+  if (!valor) return "—";
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return "—";
+  return data.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 export function Movimentacoes() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,6 +61,7 @@ export function Movimentacoes() {
   const [salvandoGastoVariavel, setSalvandoGastoVariavel] = useState(false);
   const [formGastoVariavel, setFormGastoVariavel] = useState({
     lojaId: "",
+    tipoNome: "",
     nome: "",
     valor: "",
     dataInicio: "",
@@ -40,6 +79,18 @@ export function Movimentacoes() {
   const [filtroDataInicioEstoque, setFiltroDataInicioEstoque] = useState("");
   const [filtroDataFimEstoque, setFiltroDataFimEstoque] = useState("");
   const [filtroResponsavelEstoque, setFiltroResponsavelEstoque] = useState("");
+  const [gastosVariaveis, setGastosVariaveis] = useState([]);
+  const [tiposGastosVariaveis, setTiposGastosVariaveis] = useState([]);
+  const [filtroLojaGastoVariavel, setFiltroLojaGastoVariavel] = useState("");
+  const [filtroDataInicioGastoVariavel, setFiltroDataInicioGastoVariavel] =
+    useState(obterDataHojeInput());
+  const [filtroDataFimGastoVariavel, setFiltroDataFimGastoVariavel] = useState(
+    obterDataHojeInput(),
+  );
+  const [filtroResponsavelGastoVariavel, setFiltroResponsavelGastoVariavel] =
+    useState("");
+  const [carregandoGastosVariaveis, setCarregandoGastosVariaveis] =
+    useState(false);
 
   // Ações Estoque Loja
   const [editandoEstoqueLoja, setEditandoEstoqueLoja] = useState(null);
@@ -104,6 +155,7 @@ export function Movimentacoes() {
   useEffect(() => {
     carregarDados();
     carregarMovimentacoesEstoqueLoja();
+    carregarTiposGastosVariaveis();
   }, []);
 
   useEffect(() => {
@@ -433,6 +485,54 @@ export function Movimentacoes() {
     }
   };
 
+  const carregarTiposGastosVariaveis = async () => {
+    try {
+      const res = await api.get("/tipos-gastos-variaveis");
+      setTiposGastosVariaveis(
+        (res.data || []).map((tipo) => tipo.nome).filter(Boolean),
+      );
+    } catch (error) {
+      console.error("Erro ao carregar tipos de gastos variáveis:", error);
+      setTiposGastosVariaveis(TIPOS_GASTOS_VARIAVEIS_PADRAO);
+    }
+  };
+
+  const carregarGastosVariaveis = useCallback(async () => {
+    try {
+      setCarregandoGastosVariaveis(true);
+      const params = {};
+      if (filtroLojaGastoVariavel) params.lojaId = filtroLojaGastoVariavel;
+      if (filtroDataInicioGastoVariavel) {
+        params.dataInicio = filtroDataInicioGastoVariavel;
+      }
+      if (filtroDataFimGastoVariavel) {
+        params.dataFim = filtroDataFimGastoVariavel;
+      }
+      if (filtroResponsavelGastoVariavel.trim()) {
+        params.responsavel = filtroResponsavelGastoVariavel.trim();
+      }
+
+      const res = await api.get("/gastos-variaveis", { params });
+      setGastosVariaveis(res.data || []);
+    } catch (error) {
+      console.error("Erro ao carregar gastos variÃ¡veis:", error);
+      setGastosVariaveis([]);
+    } finally {
+      setCarregandoGastosVariaveis(false);
+    }
+  }, [
+    filtroLojaGastoVariavel,
+    filtroDataInicioGastoVariavel,
+    filtroDataFimGastoVariavel,
+    filtroResponsavelGastoVariavel,
+  ]);
+
+  useEffect(() => {
+    if (usuario?.role === "ADMIN") {
+      carregarGastosVariaveis();
+    }
+  }, [carregarGastosVariaveis, usuario?.role]);
+
   // --- HANDLERS ---
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -561,6 +661,7 @@ export function Movimentacoes() {
     )}T${pad(agora.getHours())}:${pad(agora.getMinutes())}`;
     setFormGastoVariavel({
       lojaId: "",
+      tipoNome: "",
       nome: "",
       valor: "",
       dataInicio: dataHora,
@@ -575,9 +676,14 @@ export function Movimentacoes() {
     const valor = Number(
       String(formGastoVariavel.valor).replace(/\./g, "").replace(",", "."),
     );
+    const nomeGasto =
+      formGastoVariavel.tipoNome === "Outro"
+        ? formGastoVariavel.nome.trim()
+        : formGastoVariavel.tipoNome.trim();
+
     if (
       !formGastoVariavel.lojaId ||
-      !formGastoVariavel.nome.trim() ||
+      !nomeGasto ||
       !Number.isFinite(valor) ||
       valor <= 0 ||
       !formGastoVariavel.dataInicio ||
@@ -599,12 +705,15 @@ export function Movimentacoes() {
       setError("");
       await api.post("/gastos-variaveis", {
         ...formGastoVariavel,
-        nome: formGastoVariavel.nome.trim(),
+        nome: nomeGasto,
         valor,
         observacao: formGastoVariavel.observacao.trim() || null,
       });
       setModalGastoVariavel(false);
       setSuccess("Gasto variável registrado com sucesso!");
+      if (usuario?.role === "ADMIN") {
+        carregarGastosVariaveis();
+      }
     } catch (err) {
       setError(
         err.response?.data?.error || "Não foi possível registrar o gasto.",
@@ -1204,7 +1313,7 @@ export function Movimentacoes() {
             >
               Registrar Dinheiro
             </button>
-            {usuario?.role === "ADMIN" && (
+            {["ADMIN", "FUNCIONARIO"].includes(usuario?.role) && (
               <button
                 className="px-6 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 font-bold shadow text-base"
                 onClick={abrirGastoVariavel}
@@ -1273,19 +1382,53 @@ export function Movimentacoes() {
 
                 <label className="text-sm font-bold text-gray-700">
                   Nome / descrição *
-                  <input
-                    value={formGastoVariavel.nome}
+                  <select
+                    value={formGastoVariavel.tipoNome}
                     onChange={(event) =>
                       setFormGastoVariavel((atual) => ({
                         ...atual,
-                        nome: event.target.value,
+                        tipoNome: event.target.value,
+                        nome:
+                          event.target.value === "Outro" ? atual.nome : "",
                       }))
                     }
-                    className="input-field mt-2"
-                    placeholder="Ex.: material de limpeza"
+                    className="select-field mt-2"
                     required
-                  />
+                  >
+                    <option value="">Selecione o gasto...</option>
+                    {[
+                      ...(tiposGastosVariaveis.length
+                        ? tiposGastosVariaveis
+                        : TIPOS_GASTOS_VARIAVEIS_PADRAO
+                      ).filter(
+                        (tipo) => tipo.trim().toLowerCase() !== "outro",
+                      ),
+                      "Outro",
+                    ].map((tipo) => (
+                      <option key={tipo} value={tipo}>
+                        {tipo}
+                      </option>
+                    ))}
+                  </select>
                 </label>
+
+                {formGastoVariavel.tipoNome === "Outro" && (
+                  <label className="text-sm font-bold text-gray-700 md:col-span-2">
+                    Descreva o outro gasto *
+                    <input
+                      value={formGastoVariavel.nome}
+                      onChange={(event) =>
+                        setFormGastoVariavel((atual) => ({
+                          ...atual,
+                          nome: event.target.value,
+                        }))
+                      }
+                      className="input-field mt-2"
+                      placeholder="Ex.: material de limpeza"
+                      required
+                    />
+                  </label>
+                )}
 
                 <label className="text-sm font-bold text-gray-700">
                   Valor *
@@ -2270,6 +2413,226 @@ export function Movimentacoes() {
                 carregarMovimentacoesEstoqueLoja();
               }}
             />
+
+            <div className="mt-10">
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <span className="text-3xl">💸</span>
+                Histórico de Gastos Variáveis
+              </h2>
+
+              <div className="mb-5 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900">
+                <p className="font-bold">Despesas variáveis registradas</p>
+                <p className="mt-1">
+                  Por padrão aparecem somente os gastos de hoje. Use os filtros
+                  para consultar por loja, período ou responsável.
+                </p>
+              </div>
+
+              <div className="mb-5 rounded-2xl border border-gray-200 bg-white/80 backdrop-blur-sm shadow-sm p-4 md:p-5">
+                <div className="flex items-center justify-between gap-3 mb-4">
+                  <h3 className="text-sm md:text-base font-bold text-gray-800 flex items-center gap-2">
+                    <span>🔎</span>
+                    Filtros
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFiltroLojaGastoVariavel("");
+                      setFiltroDataInicioGastoVariavel(obterDataHojeInput());
+                      setFiltroDataFimGastoVariavel(obterDataHojeInput());
+                      setFiltroResponsavelGastoVariavel("");
+                    }}
+                    className="text-xs md:text-sm font-semibold text-blue-700 hover:text-blue-800 transition-colors"
+                  >
+                    Limpar filtros
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Loja
+                    </label>
+                    <select
+                      className="input-field"
+                      value={filtroLojaGastoVariavel}
+                      onChange={(e) =>
+                        setFiltroLojaGastoVariavel(e.target.value)
+                      }
+                    >
+                      <option value="">Todas as lojas</option>
+                      {lojas
+                        .filter(
+                          (loja) =>
+                            loja.nome?.trim().toLowerCase() !== "garagem",
+                        )
+                        .map((loja) => (
+                          <option key={loja.id} value={loja.id}>
+                            {loja.nome}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      De quando
+                    </label>
+                    <input
+                      type="date"
+                      className="input-field"
+                      value={filtroDataInicioGastoVariavel}
+                      onChange={(e) =>
+                        setFiltroDataInicioGastoVariavel(e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Até quando
+                    </label>
+                    <input
+                      type="date"
+                      className="input-field"
+                      value={filtroDataFimGastoVariavel}
+                      onChange={(e) =>
+                        setFiltroDataFimGastoVariavel(e.target.value)
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Quem
+                    </label>
+                    <input
+                      type="text"
+                      className="input-field"
+                      placeholder="Digite o responsável"
+                      value={filtroResponsavelGastoVariavel}
+                      onChange={(e) =>
+                        setFiltroResponsavelGastoVariavel(e.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <p className="text-xs font-bold uppercase text-slate-500">
+                    Registros
+                  </p>
+                  <p className="text-2xl font-black text-slate-900">
+                    {gastosVariaveis.length}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
+                  <p className="text-xs font-bold uppercase text-orange-700">
+                    Total do período
+                  </p>
+                  <p className="text-2xl font-black text-orange-700">
+                    {formatarMoeda(
+                      gastosVariaveis.reduce(
+                        (total, gasto) => total + Number(gasto.valor || 0),
+                        0,
+                      ),
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full">
+                    <thead>
+                      <tr className="bg-slate-50 text-left text-xs font-black uppercase tracking-wide text-slate-600">
+                        <th className="px-4 py-3">Data e responsável</th>
+                        <th className="px-4 py-3">Loja</th>
+                        <th className="px-4 py-3">Gasto</th>
+                        <th className="px-4 py-3">Período</th>
+                        <th className="px-4 py-3 text-right">Valor</th>
+                        <th className="px-4 py-3">Observação</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {carregandoGastosVariaveis && (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-10 text-center">
+                            <p className="font-bold text-slate-700">
+                              Carregando gastos variáveis...
+                            </p>
+                          </td>
+                        </tr>
+                      )}
+
+                      {!carregandoGastosVariaveis &&
+                        gastosVariaveis.length === 0 && (
+                          <tr>
+                            <td colSpan={6} className="px-4 py-12 text-center">
+                              <p className="font-bold text-slate-700">
+                                Nenhum gasto variável encontrado
+                              </p>
+                              <p className="mt-1 text-sm text-slate-500">
+                                Ajuste os filtros ou registre um novo gasto
+                                variável.
+                              </p>
+                            </td>
+                          </tr>
+                        )}
+
+                      {!carregandoGastosVariaveis &&
+                        gastosVariaveis.map((gasto) => (
+                          <tr
+                            key={gasto.id}
+                            className="align-top hover:bg-slate-50/70"
+                          >
+                            <td className="whitespace-nowrap px-4 py-4">
+                              <p className="font-bold text-slate-900">
+                                {formatarDataHora(gasto.createdAt)}
+                              </p>
+                              <p className="mt-2 text-sm font-semibold text-slate-700">
+                                👤 {gasto.usuario?.nome || "Não informado"}
+                              </p>
+                            </td>
+                            <td className="px-4 py-4">
+                              <p className="font-black text-slate-900">
+                                🏪 {gasto.loja?.nome || gasto.lojaId || "—"}
+                              </p>
+                            </td>
+                            <td className="px-4 py-4">
+                              <span className="inline-flex rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-black text-orange-800">
+                                {gasto.nome}
+                              </span>
+                            </td>
+                            <td className="whitespace-nowrap px-4 py-4 text-sm text-slate-700">
+                              <p>
+                                <span className="font-bold">Início:</span>{" "}
+                                {formatarDataHora(gasto.dataInicio)}
+                              </p>
+                              <p className="mt-1">
+                                <span className="font-bold">Fim:</span>{" "}
+                                {formatarDataHora(gasto.dataFim)}
+                              </p>
+                            </td>
+                            <td className="px-4 py-4 text-right">
+                              <p className="text-lg font-black text-red-700">
+                                {formatarMoeda(gasto.valor)}
+                              </p>
+                            </td>
+                            <td className="px-4 py-4">
+                              <p className="max-w-xs text-sm text-slate-600">
+                                {gasto.observacao || "—"}
+                              </p>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
