@@ -132,7 +132,7 @@ export function MaquinaForm() {
         tipo: formData.tipo?.trim() || null,
         capacidadePadrao: parseInt(formData.capacidadePadrao, 10) || 0,
         valorFicha: parseFloat(formData.valorFicha) || 0,
-        fichasNecessarias: parseInt(formData.fichasNecessarias, 10) || null,
+        fichasNecessarias: null,
         forcaForte: parseInt(formData.forcaForte, 10) || null,
         forcaFraca: parseInt(formData.forcaFraca, 10) || null,
         forcaPremium: parseInt(formData.forcaPremium, 10) || null,
@@ -340,7 +340,7 @@ export function MaquinaForm() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Valor da Ficha (R$)
+                    Valor da Jogada (R$)
                   </label>
                   <input
                     type="number"
@@ -348,30 +348,12 @@ export function MaquinaForm() {
                     value={formData.valorFicha}
                     onChange={handleChange}
                     className="input-field"
-                    placeholder="Ex: 2.00"
+                    placeholder="Ex: 5.00"
                     min="0"
                     step="0.01"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Valor cobrado por ficha
-                  </p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    🎫 Fichas para Jogar
-                  </label>
-                  <input
-                    type="number"
-                    name="fichasNecessarias"
-                    value={formData.fichasNecessarias}
-                    onChange={handleChange}
-                    className="input-field"
-                    placeholder="Ex: 1"
-                    min="1"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Quantas fichas são necessárias para liberar uma jogada
+                    Valor cobrado por jogada
                   </p>
                 </div>
 
