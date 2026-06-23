@@ -137,25 +137,21 @@ export function LojaForm() {
   const carregarGastosFixos = async () => {
     try {
       const response = await api.get(`/gastos-fixos-loja/${id}`);
-      // Espera um array de objetos: [{nome, valor, observacao}]
-      // Preenche os gastos fixos mantendo a ordem e nomes fixos
+      const gastosSalvos = Array.isArray(response.data) ? response.data : [];
       setGastosFixos(
-        GASTOS_FIXOS.map((g) => {
-          const encontrado = response.data?.find((item) => {
-            const nomeItem = normalizarNomeParaPersistencia(item?.nome);
-            const nomeGasto = normalizarNomeParaPersistencia(g.nome);
-            return (
-              normalizarNomeGasto(nomeItem) === normalizarNomeGasto(nomeGasto)
-            );
-          });
-          return {
-            nome: normalizarNomeParaPersistencia(g.nome),
-            valor: encontrado ? String(encontrado.valor) : "",
-            observacao: encontrado ? encontrado.observacao || "" : "",
-          };
-        }),
+        gastosSalvos.length > 0
+          ? gastosSalvos.map((gasto) => ({
+              nome: normalizarNomeParaPersistencia(gasto.nome),
+              valor: String(gasto.valor ?? ""),
+              observacao: gasto.observacao || "",
+            }))
+          : GASTOS_FIXOS.map((gasto) => ({
+              nome: gasto.nome,
+              valor: "",
+              observacao: "",
+            })),
       );
-    } catch (error) {
+    } catch {
       // Se não encontrar, mantém vazio
       setGastosFixos(
         GASTOS_FIXOS.map((g) => ({ nome: g.nome, valor: "", observacao: "" })),
@@ -229,6 +225,17 @@ export function LojaForm() {
     );
   };
 
+  const adicionarGastoFixo = () => {
+    setGastosFixos((prev) => [
+      ...prev,
+      { nome: "", valor: "", observacao: "" },
+    ]);
+  };
+
+  const removerGastoFixo = (idx) => {
+    setGastosFixos((prev) => prev.filter((_, index) => index !== idx));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -258,16 +265,29 @@ export function LojaForm() {
       if (isEdit) {
         await api.put(`/lojas/${id}`, data);
         setSuccess("Loja atualizada com sucesso!");
-        // Salvar gastos fixos
         await api.post(`/gastos-fixos-loja/${id}`, {
-          gastos: gastosFixos.map((g) => ({
-            nome: normalizarNomeParaPersistencia(g.nome),
-            valor: parseFloat(g.valor.replace(",", ".")) || 0,
-            observacao: g.observacao,
-          })),
+          gastos: gastosFixos
+            .filter((gasto) => gasto.nome.trim())
+            .map((g) => ({
+              nome: normalizarNomeParaPersistencia(g.nome),
+              valor: parseDecimalInput(g.valor, 0),
+              observacao: g.observacao,
+            })),
         });
       } else {
-        await api.post("/lojas", data);
+        const response = await api.post("/lojas", data);
+        const novaLojaId = response.data?.id;
+        if (novaLojaId) {
+          await api.post(`/gastos-fixos-loja/${novaLojaId}`, {
+            gastos: gastosFixos
+              .filter((gasto) => gasto.nome.trim())
+              .map((gasto) => ({
+                nome: normalizarNomeParaPersistencia(gasto.nome),
+                valor: parseDecimalInput(gasto.valor, 0),
+                observacao: gasto.observacao,
+              })),
+          });
+        }
         setSuccess("Loja criada com sucesso!");
       }
 
@@ -409,24 +429,56 @@ export function LojaForm() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Gastos Fixos */}
             <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-primary"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
+              <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900">
+                  <svg
+                    className="w-5 h-5 text-primary"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 12H9v-2h2v2zm0-4H9V7h2v3z" />
+                  </svg>
+                  Gastos Fixos
+                </h3>
+                <button
+                  type="button"
+                  onClick={adicionarGastoFixo}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #63038C 0%, #800080 100%)",
+                  }}
                 >
-                  <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 12H9v-2h2v2zm0-4H9V7h2v3z" />
-                </svg>
-                Gastos Fixos
-              </h3>
+                  + Adicionar gasto fixo
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {gastosFixos.map((gasto, idx) => (
                   <div
-                    key={gasto.nome}
-                    className="bg-gray-50 rounded-lg p-4 flex flex-col gap-2"
+                    key={`${idx}-${gasto.nome}`}
+                    className="relative flex flex-col gap-3 rounded-xl border border-gray-200 bg-gray-50 p-4 pr-12"
                   >
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                      {GASTOS_FIXOS[idx].label}
+                    <button
+                      type="button"
+                      onClick={() => removerGastoFixo(idx)}
+                      className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-red-100 font-black text-red-600 transition hover:bg-red-500 hover:text-white"
+                      title="Remover gasto fixo"
+                      aria-label={`Remover ${gasto.nome || "gasto fixo"}`}
+                    >
+                      ×
+                    </button>
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Nome do gasto
+                      <input
+                        type="text"
+                        className="input-field mt-1"
+                        placeholder="Ex.: Segurança, Contabilidade..."
+                        value={gasto.nome}
+                        onChange={(e) =>
+                          handleChangeGastoFixo(idx, "nome", e.target.value)
+                        }
+                        required
+                      />
                     </label>
                     <div className="flex gap-2 items-center">
                       <input
