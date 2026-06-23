@@ -268,20 +268,32 @@ export function Estoque() {
   const [lojas, setLojas] = useState([]);
   const [maquinas, setMaquinas] = useState([]);
   const [produtos, setProdutos] = useState([]);
+  const [fornecedores, setFornecedores] = useState([]);
   const [expandidos, setExpandidos] = useState({});
   const [estoqueEditando, setEstoqueEditando] = useState(null);
   const [salvandoEstoque, setSalvandoEstoque] = useState(false);
+  const [modalCompra, setModalCompra] = useState(false);
+  const [salvandoCompra, setSalvandoCompra] = useState(false);
+  const [compra, setCompra] = useState({
+    fornecedorId: "",
+    destinoLojaId: "",
+    observacao: "",
+    produtos: [{ produtoId: "", quantidade: "" }],
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const carregarDados = useCallback(async ({ exibirLoading = true } = {}) => {
     try {
       if (exibirLoading) setLoading(true);
-      const [lojasRes, maquinasRes, produtosRes] = await Promise.all([
+      const [lojasRes, maquinasRes, produtosRes, fornecedoresRes] =
+        await Promise.all([
         api.get("/lojas"),
         api.get("/maquinas"),
         api.get("/produtos"),
-      ]);
+          api.get("/fornecedores"),
+        ]);
         const lojasData = lojasRes.data || [];
         const maquinasData = maquinasRes.data || [];
 
@@ -328,6 +340,7 @@ export function Estoque() {
           })),
         );
         setProdutos(produtosRes.data || []);
+        setFornecedores(fornecedoresRes.data || []);
     } catch (err) {
       console.error("Erro ao carregar visão geral de estoque:", err);
       setError("Não foi possível carregar todos os estoques.");
@@ -448,6 +461,80 @@ export function Estoque() {
   const possuiAlertas =
     alertasDepositos.length > 0 || alertasMaquinas.length > 0;
 
+  const abrirCompra = () => {
+    setCompra({
+      fornecedorId: "",
+      destinoLojaId: garagem?.id || "",
+      observacao: "",
+      produtos: [{ produtoId: "", quantidade: "" }],
+    });
+    setModalCompra(true);
+    setError("");
+    setSuccess("");
+  };
+
+  const alterarProdutoCompra = (index, campo, valor) => {
+    setCompra((atual) => ({
+      ...atual,
+      produtos: atual.produtos.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [campo]: valor } : item,
+      ),
+    }));
+  };
+
+  const adicionarProdutoCompra = () => {
+    setCompra((atual) => ({
+      ...atual,
+      produtos: [
+        ...atual.produtos,
+        { produtoId: "", quantidade: "" },
+      ],
+    }));
+  };
+
+  const removerProdutoCompra = (index) => {
+    setCompra((atual) => ({
+      ...atual,
+      produtos:
+        atual.produtos.length === 1
+          ? atual.produtos
+          : atual.produtos.filter((_, itemIndex) => itemIndex !== index),
+    }));
+  };
+
+  const salvarCompra = async (event) => {
+    event.preventDefault();
+    const itensValidos = compra.produtos.filter(
+      (item) => item.produtoId && Number(item.quantidade) > 0,
+    );
+    if (!compra.fornecedorId || itensValidos.length === 0) {
+      setError("Selecione o fornecedor e informe pelo menos um produto.");
+      return;
+    }
+
+    try {
+      setSalvandoCompra(true);
+      setError("");
+      const response = await api.post("/compras-fornecedores", {
+        fornecedorId: compra.fornecedorId,
+        destinoLojaId: compra.destinoLojaId || garagem?.id,
+        observacao: compra.observacao,
+        produtos: itensValidos.map((item) => ({
+          produtoId: item.produtoId,
+          quantidade: Number(item.quantidade),
+        })),
+      });
+      await carregarDados({ exibirLoading: false });
+      setModalCompra(false);
+      setSuccess(response.data?.message || "Compra registrada com sucesso.");
+    } catch (err) {
+      console.error("Erro ao registrar compra:", err);
+      setError(err.response?.data?.error || "Não foi possível registrar a compra.");
+    } finally {
+      setSalvandoCompra(false);
+    }
+  };
+
   if (loading) return <PageLoader />;
 
   return (
@@ -460,7 +547,32 @@ export function Estoque() {
           icon="📦"
         />
 
-        {error && <AlertBox type="error" message={error} />}
+        <div className="mb-6 flex justify-end">
+          <button
+            type="button"
+            onClick={abrirCompra}
+            className="inline-flex items-center gap-3 rounded-xl px-6 py-3 font-black shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
+            style={{
+              background:
+                "linear-gradient(135deg, #FFD700 0%, #FFEB7A 100%)",
+              color: "#4B0053",
+            }}
+          >
+            <span className="text-xl">🛒</span>
+            Fazer compra
+          </button>
+        </div>
+
+        {error && (
+          <AlertBox type="error" message={error} onClose={() => setError("")} />
+        )}
+        {success && (
+          <AlertBox
+            type="success"
+            message={success}
+            onClose={() => setSuccess("")}
+          />
+        )}
 
         {possuiAlertas && (
           <section className="mb-8 overflow-hidden rounded-2xl border-2 border-orange-300 bg-white shadow-lg">
@@ -794,6 +906,209 @@ export function Estoque() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {modalCompra && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <form
+            onSubmit={salvarCompra}
+            className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+          >
+            <div
+              className="flex items-center justify-between gap-4 p-5 text-white"
+              style={{
+                background:
+                  "linear-gradient(135deg, #4B0053 0%, #800080 100%)",
+              }}
+            >
+              <div>
+                <h2 className="text-xl font-black">🛒 Fazer compra</h2>
+                <p className="text-sm text-purple-100">
+                  Toda compra entra primeiro na Garagem.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalCompra(false)}
+                className="rounded-lg p-2 text-2xl hover:bg-white/10"
+                disabled={salvandoCompra}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-5">
+              <div className="mb-5 rounded-xl border border-purple-200 bg-purple-50 p-4 text-sm text-purple-900">
+                <strong>Fluxo obrigatório:</strong> Fornecedor → Garagem
+                {compra.destinoLojaId &&
+                  garagem &&
+                  String(compra.destinoLojaId) !== String(garagem.id) &&
+                  " → Loja selecionada"}
+                . Todas as entradas e transferências serão registradas
+                automaticamente.
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <label className="text-sm font-semibold text-gray-700">
+                  Fornecedor *
+                  <select
+                    value={compra.fornecedorId}
+                    onChange={(event) =>
+                      setCompra((atual) => ({
+                        ...atual,
+                        fornecedorId: event.target.value,
+                      }))
+                    }
+                    className="select-field mt-2"
+                    required
+                  >
+                    <option value="">Selecione o fornecedor...</option>
+                    {fornecedores.map((fornecedor) => (
+                      <option key={fornecedor.id} value={fornecedor.id}>
+                        {fornecedor.razaoSocial}
+                        {fornecedor.nomeFantasia
+                          ? ` - ${fornecedor.nomeFantasia}`
+                          : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="text-sm font-semibold text-gray-700">
+                  Destino final
+                  <select
+                    value={compra.destinoLojaId}
+                    onChange={(event) =>
+                      setCompra((atual) => ({
+                        ...atual,
+                        destinoLojaId: event.target.value,
+                      }))
+                    }
+                    className="select-field mt-2"
+                  >
+                    {garagem && (
+                      <option value={garagem.id}>🏭 Garagem (padrão)</option>
+                    )}
+                    {lojasOperacionais.map((loja) => (
+                      <option key={loja.id} value={loja.id}>
+                        🏪 {loja.nome}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <div className="mt-6">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="font-black text-gray-900">
+                    Produtos da compra
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={adicionarProdutoCompra}
+                    className="rounded-lg bg-secondary px-3 py-2 text-sm font-bold text-white"
+                    style={{ backgroundColor: "#800080" }}
+                  >
+                    + Adicionar produto
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {compra.produtos.map((item, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-[1fr_110px_auto] items-end gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3"
+                    >
+                      <label className="text-sm font-semibold text-gray-700">
+                        Produto
+                        <select
+                          value={item.produtoId}
+                          onChange={(event) =>
+                            alterarProdutoCompra(
+                              index,
+                              "produtoId",
+                              event.target.value,
+                            )
+                          }
+                          className="select-field mt-1"
+                          required
+                        >
+                          <option value="">Selecione...</option>
+                          {produtos.map((produto) => (
+                            <option key={produto.id} value={produto.id}>
+                              {produto.emoji || "📦"} {produto.nome}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Quantidade
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantidade}
+                          onChange={(event) =>
+                            alterarProdutoCompra(
+                              index,
+                              "quantidade",
+                              event.target.value,
+                            )
+                          }
+                          className="input-field mt-1"
+                          required
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => removerProdutoCompra(index)}
+                        disabled={compra.produtos.length === 1}
+                        className="mb-1 rounded-lg px-3 py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-30"
+                        title="Remover produto"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <label className="mt-5 block text-sm font-semibold text-gray-700">
+                Observação
+                <textarea
+                  value={compra.observacao}
+                  onChange={(event) =>
+                    setCompra((atual) => ({
+                      ...atual,
+                      observacao: event.target.value,
+                    }))
+                  }
+                  className="input-field mt-2"
+                  rows="3"
+                  placeholder="Número do pedido, nota fiscal ou observações..."
+                />
+              </label>
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t bg-gray-50 p-5 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setModalCompra(false)}
+                className="btn-secondary"
+                disabled={salvandoCompra}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={salvandoCompra}
+              >
+                {salvandoCompra ? "Registrando..." : "Confirmar compra"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
