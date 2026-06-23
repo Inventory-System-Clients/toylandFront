@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
 import { Navbar } from "../components/Navbar";
@@ -131,7 +131,13 @@ function MaquinaCard({ maquina }) {
   );
 }
 
-function DepositoCard({ loja, destaque = false, expandido, onToggle }) {
+function DepositoCard({
+  loja,
+  destaque = false,
+  expandido,
+  onToggle,
+  onEdit,
+}) {
   return (
     <section
       className={`overflow-hidden rounded-2xl border-2 shadow-sm ${
@@ -148,14 +154,14 @@ function DepositoCard({ loja, destaque = false, expandido, onToggle }) {
           : undefined
       }
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        className="w-full p-5 text-left"
-        aria-expanded={expandido}
-      >
+      <div className="p-5">
         <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="flex flex-1 items-center gap-4 text-left"
+            aria-expanded={expandido}
+          >
             <span className="text-4xl">{destaque ? "🏭" : "🏪"}</span>
             <div>
               <h2 className="text-xl font-black">
@@ -169,14 +175,29 @@ function DepositoCard({ loja, destaque = false, expandido, onToggle }) {
                 {loja.estoque.length} produtos · {loja.totalUnidades} unidades
               </p>
             </div>
+          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onEdit}
+              className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
+                destaque
+                  ? "bg-primary text-secondary-dark hover:bg-primary-light"
+                  : "bg-secondary text-white hover:bg-secondary-dark"
+              }`}
+            >
+              ✏️ Editar estoque
+            </button>
+            <button
+              type="button"
+              onClick={onToggle}
+              className={`text-sm font-bold ${
+                destaque ? "text-primary" : "text-secondary"
+              }`}
+            >
+              {expandido ? "Fechar detalhes ▲" : "Ver todo o estoque ▼"}
+            </button>
           </div>
-          <span
-            className={`text-sm font-bold ${
-              destaque ? "text-primary" : "text-secondary"
-            }`}
-          >
-            {expandido ? "Fechar detalhes ▲" : "Ver todo o estoque ▼"}
-          </span>
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
@@ -194,7 +215,7 @@ function DepositoCard({ loja, destaque = false, expandido, onToggle }) {
             </p>
           )}
         </div>
-      </button>
+      </div>
 
       {expandido && (
         <div
@@ -218,18 +239,21 @@ function DepositoCard({ loja, destaque = false, expandido, onToggle }) {
 export function Estoque() {
   const [lojas, setLojas] = useState([]);
   const [maquinas, setMaquinas] = useState([]);
+  const [produtos, setProdutos] = useState([]);
   const [expandidos, setExpandidos] = useState({});
+  const [estoqueEditando, setEstoqueEditando] = useState(null);
+  const [salvandoEstoque, setSalvandoEstoque] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const carregar = async () => {
-      try {
-        setLoading(true);
-        const [lojasRes, maquinasRes] = await Promise.all([
-          api.get("/lojas"),
-          api.get("/maquinas"),
-        ]);
+  const carregarDados = useCallback(async ({ exibirLoading = true } = {}) => {
+    try {
+      if (exibirLoading) setLoading(true);
+      const [lojasRes, maquinasRes, produtosRes] = await Promise.all([
+        api.get("/lojas"),
+        api.get("/maquinas"),
+        api.get("/produtos"),
+      ]);
         const lojasData = lojasRes.data || [];
         const maquinasData = maquinasRes.data || [];
 
@@ -275,16 +299,73 @@ export function Estoque() {
             ...(estoquePorMaquina[maquina.id] || {}),
           })),
         );
-      } catch (err) {
-        console.error("Erro ao carregar visão geral de estoque:", err);
-        setError("Não foi possível carregar todos os estoques.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    carregar();
+        setProdutos(produtosRes.data || []);
+    } catch (err) {
+      console.error("Erro ao carregar visão geral de estoque:", err);
+      setError("Não foi possível carregar todos os estoques.");
+    } finally {
+      if (exibirLoading) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    carregarDados();
+  }, [carregarDados]);
+
+  const abrirEdicaoEstoque = (loja) => {
+    const estoquePorProduto = new Map(
+      loja.estoque.map((item) => [String(item.produtoId), item]),
+    );
+
+    setEstoqueEditando({
+      lojaId: loja.id,
+      lojaNome: loja.nome,
+      itens: produtos.map((produto) => {
+        const existente = estoquePorProduto.get(String(produto.id));
+        return {
+          produtoId: produto.id,
+          nome: produto.nome,
+          codigo: produto.codigo,
+          emoji: produto.emoji,
+          quantidade: Number(existente?.quantidade || 0),
+          estoqueMinimo: Number(existente?.estoqueMinimo || 0),
+        };
+      }),
+    });
+  };
+
+  const alterarItemEstoque = (produtoId, campo, valor) => {
+    const numero = Math.max(0, Number.parseInt(valor || "0", 10) || 0);
+    setEstoqueEditando((atual) => ({
+      ...atual,
+      itens: atual.itens.map((item) =>
+        item.produtoId === produtoId ? { ...item, [campo]: numero } : item,
+      ),
+    }));
+  };
+
+  const salvarEdicaoEstoque = async () => {
+    try {
+      setSalvandoEstoque(true);
+      setError("");
+      await api.put(`/estoque-lojas/${estoqueEditando.lojaId}/varios`, {
+        estoques: estoqueEditando.itens.map((item) => ({
+          produtoId: item.produtoId,
+          quantidade: item.quantidade,
+          estoqueMinimo: item.estoqueMinimo,
+        })),
+      });
+      await carregarDados({ exibirLoading: false });
+      setEstoqueEditando(null);
+    } catch (err) {
+      console.error("Erro ao editar estoque:", err);
+      setError(
+        err.response?.data?.error || "Não foi possível salvar o estoque.",
+      );
+    } finally {
+      setSalvandoEstoque(false);
+    }
+  };
 
   const garagem = useMemo(() => lojas.find(ehGaragem), [lojas]);
   const lojasOperacionais = useMemo(
@@ -359,6 +440,7 @@ export function Estoque() {
                   [garagem.id]: !atual[garagem.id],
                 }))
               }
+              onEdit={() => abrirEdicaoEstoque(garagem)}
             />
           </div>
         ) : (
@@ -401,6 +483,7 @@ export function Estoque() {
                       [loja.id]: !atual[loja.id],
                     }))
                   }
+                  onEdit={() => abrirEdicaoEstoque(loja)}
                 />
 
                 <div className="mt-5">
@@ -429,6 +512,121 @@ export function Estoque() {
           })}
         </div>
       </main>
+
+      {estoqueEditando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div
+              className="flex items-center justify-between gap-4 p-5 text-white"
+              style={{
+                background:
+                  "linear-gradient(135deg, #4B0053 0%, #800080 100%)",
+              }}
+            >
+              <div>
+                <h2 className="text-xl font-black">✏️ Editar estoque</h2>
+                <p className="text-sm text-purple-100">
+                  {estoqueEditando.lojaNome}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEstoqueEditando(null)}
+                disabled={salvandoEstoque}
+                className="rounded-lg p-2 text-2xl hover:bg-white/10"
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-5">
+              <p className="mb-5 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+                Corrija a quantidade disponível e defina o estoque mínimo para
+                cada produto. Produtos novos podem ser adicionados informando
+                uma quantidade.
+              </p>
+
+              <div className="space-y-3">
+                {estoqueEditando.itens.map((item) => (
+                  <div
+                    key={item.produtoId}
+                    className="grid grid-cols-1 items-center gap-4 rounded-xl border-2 border-gray-200 p-4 sm:grid-cols-[1fr_150px_150px]"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="text-3xl">{item.emoji || "📦"}</span>
+                      <div className="min-w-0">
+                        <p className="truncate font-bold text-gray-900">
+                          {item.nome}
+                        </p>
+                        {item.codigo && (
+                          <p className="text-xs text-gray-500">
+                            Código: {item.codigo}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Quantidade
+                      <input
+                        type="number"
+                        min="0"
+                        value={item.quantidade}
+                        onChange={(event) =>
+                          alterarItemEstoque(
+                            item.produtoId,
+                            "quantidade",
+                            event.target.value,
+                          )
+                        }
+                        className="input-field mt-1"
+                        disabled={salvandoEstoque}
+                      />
+                    </label>
+                    <label className="text-sm font-semibold text-gray-700">
+                      Estoque mínimo
+                      <input
+                        type="number"
+                        min="0"
+                        value={item.estoqueMinimo}
+                        onChange={(event) =>
+                          alterarItemEstoque(
+                            item.produtoId,
+                            "estoqueMinimo",
+                            event.target.value,
+                          )
+                        }
+                        className="input-field mt-1"
+                        disabled={salvandoEstoque}
+                      />
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t bg-gray-50 p-5 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setEstoqueEditando(null)}
+                className="btn-secondary"
+                disabled={salvandoEstoque}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={salvarEdicaoEstoque}
+                className="btn-primary"
+                disabled={salvandoEstoque}
+              >
+                {salvandoEstoque ? "Salvando..." : "Salvar estoque"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );
