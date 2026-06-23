@@ -5,7 +5,6 @@ import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import {
   PageHeader,
-  StatsGrid,
   DataTable,
   Badge,
   AlertBox,
@@ -46,6 +45,8 @@ export function Movimentacoes() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [mostrarHistoricoMovimentacoes, setMostrarHistoricoMovimentacoes] =
+    useState(false);
   const [salvandoMovimentacao, setSalvandoMovimentacao] = useState(false);
   const [fotoContadores, setFotoContadores] = useState(null);
   const [fotoContadoresPreview, setFotoContadoresPreview] = useState("");
@@ -941,52 +942,12 @@ export function Movimentacoes() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  // --- CÁLCULOS DE ESTATÍSTICAS ---
-  const entradas = movimentacoes.filter((m) => m.abastecidas > 0);
-  const saidas = movimentacoes.filter((m) => m.sairam > 0);
-  const totalEntradas = entradas.reduce(
-    (sum, m) => sum + (m.abastecidas || 0),
-    0,
-  );
-  const totalSaidas = saidas.reduce((sum, m) => sum + (m.sairam || 0), 0);
-
   const movimentacoesFiltradas = filtroLojaListagem
     ? movimentacoes.filter((mov) => {
         const maquina = maquinas.find((m) => m.id === mov.maquinaId);
         return maquina?.lojaId === filtroLojaListagem;
       })
     : movimentacoes;
-
-  const stats = [
-    {
-      label: "Total de Entradas",
-      value: totalEntradas,
-      icon: "📥",
-      gradient: "bg-gradient-to-br from-green-500 to-green-600",
-      subtitle: "Produtos abastecidos",
-    },
-    {
-      label: "Total de Saídas",
-      value: totalSaidas,
-      icon: "📤",
-      gradient: "bg-gradient-to-br from-red-500 to-red-600",
-      subtitle: "Produtos vendidos",
-    },
-    {
-      label: "Saldo",
-      value: totalEntradas - totalSaidas,
-      icon: "📊",
-      gradient: "bg-gradient-to-br from-blue-500 to-blue-600",
-      subtitle: "Diferença entrada/saída",
-    },
-    {
-      label: "Movimentações",
-      value: movimentacoes.length,
-      icon: "🔄",
-      gradient: "bg-gradient-to-br from-purple-500 to-purple-600",
-      subtitle: "Total de registros",
-    },
-  ];
 
   const columns = [
     {
@@ -1229,8 +1190,6 @@ export function Movimentacoes() {
             onClose={() => setSuccess("")}
           />
         )}
-
-        {usuario?.role === "ADMIN" && <StatsGrid stats={stats} />}
 
         <AvisosMaquinasFaltam lojas={lojas} />
 
@@ -1897,38 +1856,60 @@ export function Movimentacoes() {
         {/* Histórico de Movimentações - Apenas para ADMIN */}
         {usuario?.role === "ADMIN" && (
           <div className="card-gradient">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-2xl">📋</span>
-              Histórico de Movimentações
-              {filtroLojaListagem && (
-                <span className="text-sm text-gray-600 font-normal">
-                  ({movimentacoesFiltradas.length} de {movimentacoes.length}{" "}
-                  registros)
-                </span>
-              )}
-            </h3>
-
-            {movimentacoesFiltradas.length > 0 ? (
-              <DataTable headers={columns} data={movimentacoesFiltradas} />
-            ) : (
-              <EmptyState
-                icon="🔄"
-                title={
-                  filtroLojaListagem
-                    ? "Nenhuma movimentação encontrada"
-                    : "Nenhuma movimentação registrada"
+            <div
+              className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${
+                mostrarHistoricoMovimentacoes ? "mb-4" : ""
+              }`}
+            >
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <span className="text-2xl">📋</span>
+                Histórico de Movimentações
+                {mostrarHistoricoMovimentacoes && filtroLojaListagem && (
+                  <span className="text-sm text-gray-600 font-normal">
+                    ({movimentacoesFiltradas.length} de {movimentacoes.length}{" "}
+                    registros)
+                  </span>
+                )}
+              </h3>
+              <button
+                type="button"
+                onClick={() =>
+                  setMostrarHistoricoMovimentacoes((atual) => !atual)
                 }
-                message={
-                  filtroLojaListagem
-                    ? "Não há movimentações para a loja selecionada."
-                    : "Registre sua primeira movimentação para começar o controle de estoque!"
-                }
-                action={{
-                  label: "Nova Movimentação",
-                  onClick: () => setShowForm(true),
+                className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #63038C 0%, #800080 100%)",
                 }}
-              />
-            )}
+              >
+                {mostrarHistoricoMovimentacoes
+                  ? "Ocultar histórico ▲"
+                  : "Ver histórico ▼"}
+              </button>
+            </div>
+
+            {mostrarHistoricoMovimentacoes &&
+              (movimentacoesFiltradas.length > 0 ? (
+                <DataTable headers={columns} data={movimentacoesFiltradas} />
+              ) : (
+                <EmptyState
+                  icon="🔄"
+                  title={
+                    filtroLojaListagem
+                      ? "Nenhuma movimentação encontrada"
+                      : "Nenhuma movimentação registrada"
+                  }
+                  message={
+                    filtroLojaListagem
+                      ? "Não há movimentações para a loja selecionada."
+                      : "Registre sua primeira movimentação para começar o controle de estoque!"
+                  }
+                  action={{
+                    label: "Nova Movimentação",
+                    onClick: () => setShowForm(true),
+                  }}
+                />
+              ))}
           </div>
         )}
 
