@@ -47,7 +47,7 @@ export function Navbar() {
             </Link>
 
             {/* Menu Desktop */}
-            <div className="hidden lg:block ml-12">
+            <div className="hidden">
               <div className="flex items-center space-x-2">
                 <Link
                   to="/"
@@ -185,7 +185,7 @@ export function Navbar() {
             {/* Botão Hamburger Mobile */}
             <button
               onClick={toggleMenu}
-              className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
               aria-label="Menu"
             >
               <svg
@@ -262,7 +262,7 @@ export function Navbar() {
 
       {/* Menu Mobile Dropdown */}
       {isMenuOpen && (
-        <div className="lg:hidden bg-gray-900 border-t border-white/10">
+        <div className="bg-gray-900 border-t border-white/10">
           <div className="px-4 py-3 space-y-2">
             <Link
               to="/"
