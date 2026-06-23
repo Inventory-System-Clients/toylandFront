@@ -19,6 +19,16 @@ export function Movimentacoes() {
   const navigate = useNavigate();
   const location = useLocation();
   const [modalRegistrarDinheiro, setModalRegistrarDinheiro] = useState(false);
+  const [modalGastoVariavel, setModalGastoVariavel] = useState(false);
+  const [salvandoGastoVariavel, setSalvandoGastoVariavel] = useState(false);
+  const [formGastoVariavel, setFormGastoVariavel] = useState({
+    lojaId: "",
+    nome: "",
+    valor: "",
+    dataInicio: "",
+    dataFim: "",
+    observacao: "",
+  });
   const { usuario } = useAuth();
 
   // --- ESTADOS ---
@@ -540,6 +550,67 @@ export function Movimentacoes() {
     } finally {
       setLendoFotoContadores(false);
       e.target.value = "";
+    }
+  };
+
+  const abrirGastoVariavel = () => {
+    const agora = new Date();
+    const pad = (numero) => String(numero).padStart(2, "0");
+    const dataHora = `${agora.getFullYear()}-${pad(agora.getMonth() + 1)}-${pad(
+      agora.getDate(),
+    )}T${pad(agora.getHours())}:${pad(agora.getMinutes())}`;
+    setFormGastoVariavel({
+      lojaId: "",
+      nome: "",
+      valor: "",
+      dataInicio: dataHora,
+      dataFim: dataHora,
+      observacao: "",
+    });
+    setModalGastoVariavel(true);
+  };
+
+  const salvarGastoVariavel = async (event) => {
+    event.preventDefault();
+    const valor = Number(
+      String(formGastoVariavel.valor).replace(/\./g, "").replace(",", "."),
+    );
+    if (
+      !formGastoVariavel.lojaId ||
+      !formGastoVariavel.nome.trim() ||
+      !Number.isFinite(valor) ||
+      valor <= 0 ||
+      !formGastoVariavel.dataInicio ||
+      !formGastoVariavel.dataFim
+    ) {
+      setError("Preencha corretamente os dados do gasto variável.");
+      return;
+    }
+    if (
+      new Date(formGastoVariavel.dataFim) <
+      new Date(formGastoVariavel.dataInicio)
+    ) {
+      setError("A data final do gasto não pode ser anterior à data inicial.");
+      return;
+    }
+
+    try {
+      setSalvandoGastoVariavel(true);
+      setError("");
+      await api.post("/gastos-variaveis", {
+        ...formGastoVariavel,
+        nome: formGastoVariavel.nome.trim(),
+        valor,
+        observacao: formGastoVariavel.observacao.trim() || null,
+      });
+      setModalGastoVariavel(false);
+      setSuccess("Gasto variável registrado com sucesso!");
+    } catch (err) {
+      setError(
+        err.response?.data?.error || "Não foi possível registrar o gasto.",
+      );
+    } finally {
+      setSalvandoGastoVariavel(false);
     }
   };
 
@@ -1133,15 +1204,181 @@ export function Movimentacoes() {
             >
               Registrar Dinheiro
             </button>
+            {usuario?.role === "ADMIN" && (
+              <button
+                className="px-6 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 font-bold shadow text-base"
+                onClick={abrirGastoVariavel}
+              >
+                Gastos Variáveis
+              </button>
+            )}
           </div>
         </div>
+        {modalGastoVariavel && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+            <form
+              onSubmit={salvarGastoVariavel}
+              className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+            >
+              <div
+                className="flex items-center justify-between p-5 text-white"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #C2410C 0%, #F97316 100%)",
+                }}
+              >
+                <div>
+                  <h2 className="text-xl font-black">💸 Gasto variável</h2>
+                  <p className="text-sm text-orange-100">
+                    Registre uma despesa vinculada à loja e ao período.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModalGastoVariavel(false)}
+                  disabled={salvandoGastoVariavel}
+                  className="rounded-lg p-2 text-2xl hover:bg-white/10"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
+                <label className="text-sm font-bold text-gray-700">
+                  Loja *
+                  <select
+                    value={formGastoVariavel.lojaId}
+                    onChange={(event) =>
+                      setFormGastoVariavel((atual) => ({
+                        ...atual,
+                        lojaId: event.target.value,
+                      }))
+                    }
+                    className="select-field mt-2"
+                    required
+                  >
+                    <option value="">Selecione a loja...</option>
+                    {lojas
+                      .filter(
+                        (loja) =>
+                          loja.nome?.trim().toLowerCase() !== "garagem",
+                      )
+                      .map((loja) => (
+                        <option key={loja.id} value={loja.id}>
+                          {loja.nome}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+
+                <label className="text-sm font-bold text-gray-700">
+                  Nome / descrição *
+                  <input
+                    value={formGastoVariavel.nome}
+                    onChange={(event) =>
+                      setFormGastoVariavel((atual) => ({
+                        ...atual,
+                        nome: event.target.value,
+                      }))
+                    }
+                    className="input-field mt-2"
+                    placeholder="Ex.: material de limpeza"
+                    required
+                  />
+                </label>
+
+                <label className="text-sm font-bold text-gray-700">
+                  Valor *
+                  <input
+                    value={formGastoVariavel.valor}
+                    onChange={(event) =>
+                      setFormGastoVariavel((atual) => ({
+                        ...atual,
+                        valor: event.target.value,
+                      }))
+                    }
+                    className="input-field mt-2"
+                    inputMode="decimal"
+                    placeholder="R$ 0,00"
+                    required
+                  />
+                </label>
+
+                <label className="text-sm font-bold text-gray-700">
+                  Início do período *
+                  <input
+                    type="datetime-local"
+                    value={formGastoVariavel.dataInicio}
+                    onChange={(event) =>
+                      setFormGastoVariavel((atual) => ({
+                        ...atual,
+                        dataInicio: event.target.value,
+                      }))
+                    }
+                    className="input-field mt-2"
+                    required
+                  />
+                </label>
+
+                <label className="text-sm font-bold text-gray-700">
+                  Fim do período *
+                  <input
+                    type="datetime-local"
+                    value={formGastoVariavel.dataFim}
+                    onChange={(event) =>
+                      setFormGastoVariavel((atual) => ({
+                        ...atual,
+                        dataFim: event.target.value,
+                      }))
+                    }
+                    className="input-field mt-2"
+                    required
+                  />
+                </label>
+
+                <label className="text-sm font-bold text-gray-700 md:col-span-2">
+                  Observação
+                  <textarea
+                    value={formGastoVariavel.observacao}
+                    onChange={(event) =>
+                      setFormGastoVariavel((atual) => ({
+                        ...atual,
+                        observacao: event.target.value,
+                      }))
+                    }
+                    className="input-field mt-2"
+                    rows="3"
+                    placeholder="Detalhes adicionais..."
+                  />
+                </label>
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 border-t bg-gray-50 p-5 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setModalGastoVariavel(false)}
+                  className="btn-secondary"
+                  disabled={salvandoGastoVariavel}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={salvandoGastoVariavel}
+                >
+                  {salvandoGastoVariavel
+                    ? "Registrando..."
+                    : "Registrar gasto"}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
         {/* Modal Registrar Dinheiro */}
         {modalRegistrarDinheiro && (
           <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-            <div
-              className="bg-white rounded-lg p-6 shadow-lg relative"
-              style={{ minWidth: 520 }}
-            >
+            <div className="relative w-full max-w-3xl rounded-2xl bg-white shadow-lg">
               <button
                 onClick={() => setModalRegistrarDinheiro(false)}
                 style={{
