@@ -121,10 +121,14 @@ function MaquinaCard({ maquina }) {
       </div>
       <div className="mt-3 h-2 overflow-hidden rounded-full bg-gray-200">
         <div
-          className={`h-full rounded-full ${
-            maquina.alertaEstoqueBaixo ? "bg-red-500" : "bg-primary"
-          }`}
-          style={{ width: `${percentual}%` }}
+          className="h-full rounded-full transition-all duration-500"
+          style={{
+            width: `${percentual}%`,
+            minWidth: percentual > 0 ? "6px" : 0,
+            backgroundColor: maquina.alertaEstoqueBaixo
+              ? "#EF4444"
+              : "#FFD700",
+          }}
         />
       </div>
     </Link>
