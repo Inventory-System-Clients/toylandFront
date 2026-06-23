@@ -176,24 +176,48 @@ function DepositoCard({
               </p>
             </div>
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <button
               type="button"
               onClick={onEdit}
-              className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
+              className="inline-flex items-center justify-center gap-2 rounded-full border px-4 py-2 text-sm font-bold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              style={
                 destaque
-                  ? "bg-primary text-secondary-dark hover:bg-primary-light"
-                  : "bg-secondary text-white hover:bg-secondary-dark"
-              }`}
+                  ? {
+                      background:
+                        "linear-gradient(135deg, #FFD700 0%, #FFEB7A 100%)",
+                      borderColor: "#FFD700",
+                      color: "#4B0053",
+                    }
+                  : {
+                      background:
+                        "linear-gradient(135deg, #63038C 0%, #800080 100%)",
+                      borderColor: "#63038C",
+                      color: "#FFFFFF",
+                    }
+              }
             >
-              ✏️ Editar estoque
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16.862 3.487a2.1 2.1 0 113 2.94L8.25 18.04 4 19l.96-4.25L16.862 3.487z"
+                />
+              </svg>
+              Editar
             </button>
             <button
               type="button"
               onClick={onToggle}
-              className={`text-sm font-bold ${
-                destaque ? "text-primary" : "text-secondary"
-              }`}
+              className="inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-bold transition hover:bg-black/5"
+              style={{ color: destaque ? "#FFD700" : "#4B0053" }}
             >
               {expandido ? "Fechar detalhes ▲" : "Ver todo o estoque ▼"}
             </button>
