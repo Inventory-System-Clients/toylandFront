@@ -1224,35 +1224,35 @@ export function Movimentacoes() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header com dois botões lado a lado */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div className="flex flex-col gap-4 mb-6">
           <PageHeader
             title="Movimentações"
             subtitle="Registre entradas e saídas de produtos nas máquinas"
             icon="🔄"
             action={null}
           />
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button
-              className="px-6 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 font-bold shadow text-base"
+              className="px-6 py-3 bg-yellow-500 text-white rounded hover:bg-yellow-600 font-bold shadow text-base"
               onClick={() => setShowForm((v) => !v)}
             >
               {showForm ? "Cancelar" : "Nova Movimentação"}
             </button>
             <button
-              className="px-6 py-2 bg-rose-600 text-white rounded hover:bg-rose-700 font-bold shadow text-base"
+              className="px-6 py-3 bg-rose-600 text-white rounded hover:bg-rose-700 font-bold shadow text-base"
               onClick={() => navigate("/sangrias")}
             >
               Sangria
             </button>
             <button
-              className="px-6 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 font-bold shadow text-base"
+              className="px-6 py-3 bg-blue-700 text-white rounded hover:bg-blue-800 font-bold shadow text-base"
               onClick={() => setModalRegistrarDinheiro(true)}
             >
               Registrar Dinheiro
             </button>
             {["ADMIN", "FUNCIONARIO"].includes(usuario?.role) && (
               <button
-                className="px-6 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 font-bold shadow text-base"
+                className="px-6 py-3 bg-orange-600 text-white rounded hover:bg-orange-700 font-bold shadow text-base"
                 onClick={abrirGastoVariavel}
               >
                 Gastos Variáveis
