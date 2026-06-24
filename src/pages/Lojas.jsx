@@ -107,18 +107,6 @@ export function Lojas() {
       ),
     },
     {
-      label: "Valor Ficha",
-      key: "valorFichaPadrao",
-      render: (loja) => {
-        const valor = Number(loja.valorFichaPadrao ?? 2.5);
-        return (
-          <span className="font-semibold text-gray-700">
-            R$ {valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-          </span>
-        );
-      },
-    },
-    {
       label: "Status",
       key: "ativo",
       render: (loja) => (
