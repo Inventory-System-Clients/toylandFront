@@ -1482,8 +1482,34 @@ export function Movimentacoes() {
                   try {
                     setError("");
                     setSuccess("");
-                    await api.post("/registro-dinheiro", data);
-                    setSuccess("Registro de dinheiro salvo com sucesso!");
+                    const response = await api.post("/registro-dinheiro", data);
+                    const fechamentoMachinePay =
+                      response.data?.fechamentoMachinePay;
+                    const dinheiroPeloContador =
+                      response.data?.dinheiroPeloContador;
+                    const complementoDinheiro = dinheiroPeloContador?.calculado
+                      ? ` Dinheiro calculado pelo contador: R$ ${Number(
+                          dinheiroPeloContador.valor || 0,
+                        ).toLocaleString("pt-BR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}.`
+                      : "";
+                    if (fechamentoMachinePay?.executado) {
+                      setSuccess(
+                        fechamentoMachinePay.concluido
+                          ? `Fechamento salvo e concluído na Machine Pay!${complementoDinheiro}`
+                          : `Fechamento salvo no ToyLand, mas a Machine Pay não confirmou o fechamento${
+                              fechamentoMachinePay.erro
+                                ? `: ${fechamentoMachinePay.erro}`
+                                : "."
+                            }${complementoDinheiro}`,
+                      );
+                    } else {
+                      setSuccess(
+                        `Registro de dinheiro salvo com sucesso!${complementoDinheiro}`,
+                      );
+                    }
                     setModalRegistrarDinheiro(false);
                   } catch (err) {
                     setError(
