@@ -2339,9 +2339,9 @@ export function Dashboard() {
                   </p>
                 </div>
               </div>
-              {/* Bom Desempenho */}
+              {/* Pelúcias fora da meta de jogadas */}
               <div
-                className="stat-card bg-linear-to-br from-cyan-500 to-sky-700 p-4 sm:p-6 rounded-xl shadow-md flex flex-col justify-between min-h-30 cursor-pointer"
+                className="stat-card bg-linear-to-br from-red-500 to-orange-600 p-4 sm:p-6 rounded-xl shadow-md flex flex-col justify-between min-h-30 cursor-pointer"
                 onClick={() => {
                   const alertSection = document.getElementById(
                     "alertas-bom-desempenho",
@@ -2354,7 +2354,7 @@ export function Dashboard() {
                 <div className="relative z-10">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-medium opacity-90">
-                      Bom Desempenho
+                      Jogadas fora da meta
                     </h3>
                     <svg
                       className="w-8 h-8 opacity-80"
@@ -2374,7 +2374,7 @@ export function Dashboard() {
                     {alertasBomDesempenho.length}
                   </p>
                   <p className="text-xs opacity-75 mt-1">
-                    🚀 IN acima do esperado
+                    ⚠️ Pelúcias fora do esperado
                   </p>
                 </div>
               </div>
@@ -4075,56 +4075,127 @@ export function Dashboard() {
 
         {usuario?.role === "ADMIN" && alertasBomDesempenho.length > 0 && (
           <div
-            className="card mb-8 border-l-4 border-cyan-500"
+            className="card mb-8 border-l-4 border-red-500"
             id="alertas-bom-desempenho"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <span className="bg-cyan-100 p-2 rounded-lg">🚀</span>
-                Alertas de Bom Desempenho
+                <span className="bg-red-100 p-2 rounded-lg">⚠️</span>
+                Pelúcias saindo fora do esperado
               </h2>
-              <span className="badge bg-cyan-100 text-cyan-700 border-cyan-300">
+              <span className="badge bg-red-100 text-red-700 border-red-300">
                 {alertasBomDesempenho.length}{" "}
                 {alertasBomDesempenho.length === 1 ? "alerta" : "alertas"}
               </span>
             </div>
             <div className="space-y-3">
-              {alertasBomDesempenho.slice(0, 5).map((alerta) => (
+              {alertasBomDesempenho.slice(0, 5).map((alerta) => {
+                const acimaDaMeta =
+                  alerta.direcao === "acima" ||
+                  Number(alerta.jogadasPorPelucia || 0) >
+                    Number(alerta.jogadasBoasPorPelucia || 0);
+
+                return (
                 <div
                   key={alerta.id}
-                  className="p-5 rounded-xl bg-cyan-50 border border-cyan-200 shadow-sm"
+                  className={`p-5 rounded-xl shadow-sm ${
+                    acimaDaMeta
+                      ? "bg-amber-50 border border-amber-200"
+                      : "bg-red-50 border border-red-200"
+                  }`}
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
                         <span className="font-bold text-lg text-gray-900">
-                          {alerta.maquinaNome}
+                          🎮 {alerta.maquinaNome || "Máquina"}
                         </span>
                         {alerta.lojaNome && (
-                          <span className="text-sm text-gray-600">
-                            - {alerta.lojaNome}
+                          <span
+                            className={`rounded-full bg-white px-3 py-1 text-sm font-bold ${
+                              acimaDaMeta
+                                ? "text-amber-700 border border-amber-200"
+                                : "text-red-700 border border-red-200"
+                            }`}
+                          >
+                            🏪 {alerta.lojaNome}
                           </span>
                         )}
                       </div>
                       <p className="text-sm text-gray-700">
-                        IN atual: <strong>{alerta.contador_in}</strong> ·
-                        esperado: <strong>{alerta.expectedDiff}</strong>
+                        Saíram <strong>{alerta.sairam}</strong> pelúcia(s). O
+                        contador IN subiu <strong>{alerta.diffIn}</strong>{" "}
+                        jogada(s) no período.
                       </p>
-                      <p className="text-sm text-gray-700">
-                        Saíram: <strong>{alerta.sairam}</strong> · Valor ficha:{" "}
-                        <strong>
-                          R$ {Number(alerta.valorFicha).toFixed(2)}
-                        </strong>{" "}
-                        · Jogadas boas:{" "}
-                        <strong>{alerta.jogadasBoasPorPelucia}</strong>
-                      </p>
+                      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <div
+                          className={`rounded-xl bg-white p-3 border ${
+                            acimaDaMeta ? "border-amber-100" : "border-red-100"
+                          }`}
+                        >
+                          <p className="text-xs font-bold uppercase text-gray-500">
+                            {acimaDaMeta ? "Saindo depois" : "Saindo antes"}
+                          </p>
+                          <p
+                            className={`text-2xl font-black ${
+                              acimaDaMeta ? "text-amber-700" : "text-red-700"
+                            }`}
+                          >
+                            {Number(alerta.jogadasPorPelucia || 0).toFixed(2)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            jogadas por pelúcia
+                          </p>
+                        </div>
+                        <div
+                          className={`rounded-xl bg-white p-3 border ${
+                            acimaDaMeta ? "border-amber-100" : "border-red-100"
+                          }`}
+                        >
+                          <p className="text-xs font-bold uppercase text-gray-500">
+                            Esperado
+                          </p>
+                          <p className="text-2xl font-black text-green-700">
+                            {Number(alerta.jogadasBoasPorPelucia || 0).toFixed(
+                              2,
+                            )}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            jogadas por pelúcia
+                          </p>
+                        </div>
+                        <div
+                          className={`rounded-xl bg-white p-3 border ${
+                            acimaDaMeta ? "border-amber-100" : "border-red-100"
+                          }`}
+                        >
+                          <p className="text-xs font-bold uppercase text-gray-500">
+                            IN esperado
+                          </p>
+                          <p className="text-2xl font-black text-gray-900">
+                            {Number(alerta.contadorInEsperado || 0).toFixed(0)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            para {alerta.sairam} saída(s)
+                          </p>
+                        </div>
+                      </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-3xl font-bold text-cyan-800">
-                        +R$ {Number(alerta.diferenca || 0).toFixed(2)}
+                      <p
+                        className={`text-3xl font-bold ${
+                          acimaDaMeta ? "text-amber-700" : "text-red-700"
+                        }`}
+                      >
+                        {acimaDaMeta ? "+" : "-"}
+                        {Number(alerta.diferencaJogadas || 0).toFixed(2)}
                       </p>
-                      <p className="text-xs text-cyan-700 mt-1">
-                        Acima do esperado
+                      <p
+                        className={`text-xs mt-1 ${
+                          acimaDaMeta ? "text-amber-700" : "text-red-700"
+                        }`}
+                      >
+                        jogadas {acimaDaMeta ? "acima" : "abaixo"} da meta
                       </p>
                     </div>
                   </div>
@@ -4133,8 +4204,9 @@ export function Dashboard() {
                       {alerta.mensagem}
                     </p>
                   )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
