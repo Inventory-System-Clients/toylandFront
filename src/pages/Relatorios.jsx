@@ -10,6 +10,9 @@ import Swal from "sweetalert2";
 
 const TODAS_LOJAS_VALUE = "__TODAS_AS_LOJAS__";
 
+const ehLojaSomenteEstoque = (loja) =>
+  String(loja?.nome || "").trim().toLowerCase() === "garagem";
+
 export function Relatorios() {
   const location = useLocation();
   const [lojas, setLojas] = useState([]);
@@ -1096,11 +1099,13 @@ export function Relatorios() {
               >
                 <option value="">Selecione uma loja</option>
                 <option value={TODAS_LOJAS_VALUE}>Todas as lojas</option>
-                {lojas.map((loja) => (
-                  <option key={loja.id} value={loja.id}>
-                    {loja.nome}
-                  </option>
-                ))}
+                {lojas
+                  .filter((loja) => !ehLojaSomenteEstoque(loja))
+                  .map((loja) => (
+                    <option key={loja.id} value={loja.id}>
+                      {loja.nome}
+                    </option>
+                  ))}
               </select>
             </div>
             <div>

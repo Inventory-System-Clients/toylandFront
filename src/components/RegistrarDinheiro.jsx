@@ -27,6 +27,9 @@ const numeroLocal = (valor) => {
 const formatarMoedaInput = (valor) =>
   Number(valor || 0).toFixed(2).replace(".", ",");
 
+const ehLojaSomenteEstoque = (loja) =>
+  String(loja?.nome || "").trim().toLowerCase() === "garagem";
+
 function CampoValor({ label, value, onChange, placeholder = "0,00" }) {
   return (
     <label className="block text-sm font-bold text-gray-700">
@@ -66,6 +69,11 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
   const [resumoMachinePay, setResumoMachinePay] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [erroSubmit, setErroSubmit] = useState("");
+
+  const lojasFinanceiras = useMemo(
+    () => lojas.filter((loja) => !ehLojaSomenteEstoque(loja)),
+    [lojas],
+  );
 
   const maquinasDaLoja = useMemo(
     () =>
@@ -278,7 +286,7 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
                 required
               >
                 <option value="">Selecione a loja...</option>
-                {lojas.map((loja) => (
+                {lojasFinanceiras.map((loja) => (
                   <option key={loja.id} value={loja.id}>
                     {loja.nome}
                   </option>
