@@ -820,41 +820,14 @@ export function Movimentacoes() {
             quantidadeSaiu: quantidadeSaiu,
             quantidadeAbastecida: quantidadeAdicionada,
             retiradaProduto: retiradaProduto,
+            retiradaProdutoDevolverEstoque:
+              formData.retiradaProdutoDevolverEstoque === true,
             // Transformar para o formato do backend (atualizado)
           },
         ],
       };
 
       await api.post("/movimentacoes", data);
-
-      // Devolver retirada para o estoque da loja, se marcado
-      if (
-        formData.retiradaProdutoDevolverEstoque &&
-        retiradaProduto > 0 &&
-        formData.produto_id &&
-        formData.maquina_id
-      ) {
-        // Encontrar a loja da máquina selecionada
-        const maquinaSelecionada = maquinas.find(
-          (m) => m.id === formData.maquina_id,
-        );
-        const lojaId = maquinaSelecionada ? maquinaSelecionada.lojaId : null;
-        if (lojaId) {
-          await api.post("/movimentacao-estoque-loja", {
-            lojaId,
-            produtos: [
-              {
-                produtoId: formData.produto_id,
-                quantidade: retiradaProduto,
-                tipoMovimentacao: "entrada",
-              },
-            ],
-            usuarioId: usuario.id,
-            observacao:
-              "Devolução automática de retirada de produto da máquina",
-          });
-        }
-      }
 
       // Logs para depuração do filtro
       console.log("Todas movimentações:", movimentacoes);
