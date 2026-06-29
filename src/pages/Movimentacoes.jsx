@@ -1489,6 +1489,7 @@ export function Movimentacoes() {
                       err?.response?.data?.error ||
                         "Erro ao registrar dinheiro.",
                     );
+                    throw err;
                   }
                 }}
               />

@@ -60,6 +60,7 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
   const [erroMachinePay, setErroMachinePay] = useState("");
   const [resumoMachinePay, setResumoMachinePay] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  const [erroSubmit, setErroSubmit] = useState("");
 
   const maquinasDaLoja = useMemo(
     () =>
@@ -72,11 +73,19 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
 
   const escopoCompleto = Boolean(lojaId) && Boolean(maquinaId);
 
+  const formatarDataHora = (valor) => {
+    if (!valor) return "";
+    const data = new Date(valor);
+    if (Number.isNaN(data.getTime())) return "";
+    return data.toLocaleString("pt-BR");
+  };
+
   useEffect(() => {
     if (!escopoCompleto) {
       setInicio("");
       setFim("");
       setPeriodoAutomatico(null);
+      setErroSubmit("");
       return;
     }
 
@@ -174,6 +183,7 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
 
     try {
       setEnviando(true);
+      setErroSubmit("");
       await onSubmit({
         loja: lojaId,
         maquina: maquinaId,
@@ -187,6 +197,30 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
         observacoes: observacoes.trim() || null,
         gastosVariaveis: [],
       });
+    } catch (error) {
+      const dadosErro = error?.response?.data || {};
+      const conflito = dadosErro.conflito;
+      const detalheConflito =
+        conflito?.inicio && conflito?.fim
+          ? ` Fechamento existente: ${formatarDataHora(
+              conflito.inicio,
+            )} ate ${formatarDataHora(conflito.fim)}.`
+          : "";
+
+      setErroSubmit(
+        `${dadosErro.error || "Nao foi possivel registrar dinheiro."}${detalheConflito}`,
+      );
+
+      if (dadosErro.proximoPeriodo?.inicio && dadosErro.proximoPeriodo?.fim) {
+        setInicio(paraDataHoraLocal(dadosErro.proximoPeriodo.inicio));
+        setFim(paraDataHoraLocal(dadosErro.proximoPeriodo.fim));
+        setPeriodoAutomatico({
+          inicio: dadosErro.proximoPeriodo.inicio,
+          fim: dadosErro.proximoPeriodo.fim,
+          possuiHistorico: Boolean(conflito),
+          ultimoFechamento: conflito || null,
+        });
+      }
     } finally {
       setEnviando(false);
     }
@@ -205,6 +239,12 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
           Registre a contagem semanal ou de qualquer período escolhido.
         </p>
       </div>
+
+      {erroSubmit && (
+        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
+          {erroSubmit}
+        </div>
+      )}
 
       <div className="space-y-6">
         <section className="rounded-2xl border border-purple-100 bg-purple-50/50 p-4">
