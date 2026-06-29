@@ -9,6 +9,11 @@ const paraDataHoraLocal = (valor) => {
   return `${data.getFullYear()}-${pad(data.getMonth() + 1)}-${pad(data.getDate())}T${pad(data.getHours())}:${pad(data.getMinutes())}`;
 };
 
+const paraIsoComFusoLocal = (valor) => {
+  const data = new Date(valor);
+  return Number.isNaN(data.getTime()) ? "" : data.toISOString();
+};
+
 const numeroLocal = (valor) => {
   if (valor === "" || valor === null || valor === undefined) return 0;
   const texto = String(valor).trim();
@@ -137,7 +142,11 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
         setConsultandoMachinePay(true);
         setErroMachinePay("");
         const response = await api.get("/registro-dinheiro/machine-pay", {
-          params: { maquinaId, inicio, fim },
+          params: {
+            maquinaId,
+            inicio: paraIsoComFusoLocal(inicio),
+            fim: paraIsoComFusoLocal(fim),
+          },
         });
         setValorPix(formatarMoedaInput(response.data.pix));
         setValorCartao(formatarMoedaInput(response.data.cartao));
@@ -172,6 +181,13 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
       return;
     }
 
+    const inicioIso = paraIsoComFusoLocal(inicio);
+    const fimIso = paraIsoComFusoLocal(fim);
+    if (!inicioIso || !fimIso) {
+      window.alert("Confira o periodo informado.");
+      return;
+    }
+
     const dinheiro = numeroLocal(valorDinheiro);
     const pix = numeroLocal(valorPix);
     const cartao = numeroLocal(valorCartao);
@@ -188,8 +204,8 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
         loja: lojaId,
         maquina: maquinaId,
         registrarTotalLoja: false,
-        inicio,
-        fim,
+        inicio: inicioIso,
+        fim: fimIso,
         valorDinheiro: dinheiro,
         valorPix: pix,
         valorCartao: cartao,
