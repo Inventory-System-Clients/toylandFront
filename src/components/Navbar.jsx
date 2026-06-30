@@ -93,6 +93,7 @@ export function Navbar() {
                     </Link>
                   </>
                 )}
+                {usuario?.role === "ADMIN" && (
                 <Link
                   to="/produtos"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -103,6 +104,7 @@ export function Navbar() {
                 >
                   🧸 Produtos
                 </Link>
+                )}
                 <Link
                   to="/manutencao"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -133,6 +135,7 @@ export function Navbar() {
                 >
                   🏪 Lojas
                 </Link>
+                {usuario?.role === "ADMIN" && (
                 <Link
                   to="/produtos-a-comprar"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -143,6 +146,7 @@ export function Navbar() {
                 >
                   🛒 Carrinho
                 </Link>
+                )}
                 {usuario?.role === "ADMIN" && (
                   <>
                     <Link
@@ -312,6 +316,7 @@ export function Navbar() {
                 </Link>
               </>
             )}
+            {usuario?.role === "ADMIN" && (
             <Link
               to="/produtos"
               onClick={closeMenu}
@@ -323,6 +328,7 @@ export function Navbar() {
             >
               🧸 Produtos
             </Link>
+            )}
             <Link
               to="/manutencao"
               onClick={closeMenu}
@@ -356,6 +362,7 @@ export function Navbar() {
             >
               🏪 Lojas
             </Link>
+            {usuario?.role === "ADMIN" && (
             <Link
               to="/produtos-a-comprar"
               onClick={closeMenu}
@@ -367,6 +374,7 @@ export function Navbar() {
             >
               🛒 Produtos a Comprar
             </Link>
+            )}
             {usuario?.role === "ADMIN" && (
               <>
                 <Link
