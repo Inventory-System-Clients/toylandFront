@@ -20,6 +20,8 @@ export function MaquinaForm() {
     capacidadePadrao: "",
     valorFicha: "",
     jogadasBoasPorPelucia: "",
+    peluciaGigante: false,
+    alertaJogadasAntesPelucia: "",
     fichasNecessarias: "",
     forcaForte: "",
     forcaFraca: "",
@@ -71,6 +73,9 @@ export function MaquinaForm() {
         capacidadePadrao: response.data.capacidadePadrao || "",
         valorFicha: response.data.valorFicha || "",
         jogadasBoasPorPelucia: response.data.jogadasBoasPorPelucia || "",
+        peluciaGigante: Boolean(response.data.peluciaGigante),
+        alertaJogadasAntesPelucia:
+          response.data.alertaJogadasAntesPelucia || "",
         fichasNecessarias: response.data.fichasNecessarias || "",
         forcaForte: response.data.forcaForte || "",
         forcaFraca: response.data.forcaFraca || "",
@@ -138,6 +143,10 @@ export function MaquinaForm() {
           formData.jogadasBoasPorPelucia !== ""
             ? parseFloat(formData.jogadasBoasPorPelucia)
             : null,
+        peluciaGigante: formData.peluciaGigante,
+        alertaJogadasAntesPelucia: formData.peluciaGigante
+          ? parseInt(formData.alertaJogadasAntesPelucia, 10) || null
+          : null,
         fichasNecessarias: null,
         forcaForte: parseInt(formData.forcaForte, 10) || null,
         forcaFraca: parseInt(formData.forcaFraca, 10) || null,
@@ -382,6 +391,48 @@ export function MaquinaForm() {
                     pelúcia.
                   </p>
                 </div>
+
+                <div className="md:col-span-2">
+                  <label className="flex items-center gap-3 cursor-pointer rounded-lg border border-gray-200 bg-white p-4">
+                    <input
+                      type="checkbox"
+                      name="peluciaGigante"
+                      checked={formData.peluciaGigante}
+                      onChange={handleChange}
+                      className="w-5 h-5 text-primary rounded focus:ring-2 focus:ring-primary"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-gray-700">
+                        Maquina de pelucia gigante
+                      </span>
+                      <span className="block text-xs text-gray-500 mt-1">
+                        Ativa o alerta quando estiver perto da pelucia sair.
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
+                {formData.peluciaGigante && (
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Avisar faltando quantas jogadas
+                    </label>
+                    <input
+                      type="number"
+                      name="alertaJogadasAntesPelucia"
+                      value={formData.alertaJogadasAntesPelucia}
+                      onChange={handleChange}
+                      className="input-field"
+                      placeholder="Ex: 20"
+                      min="1"
+                      step="1"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Ex: meta 100 e jogada R$ 2, avisar faltando 20 mostra
+                      alerta quando o contador estiver entre 160 e 200.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">

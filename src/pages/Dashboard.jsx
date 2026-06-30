@@ -25,6 +25,7 @@ export function Dashboard() {
   const [maquinas, setMaquinas] = useState([]);
   const [produtos, setProdutos] = useState([]);
   const [alertasBomDesempenho, setAlertasBomDesempenho] = useState([]);
+  const [alertasPeluciaGigante, setAlertasPeluciaGigante] = useState([]);
   const [machinePayMesTotal, setMachinePayMesTotal] = useState(0);
   // Estado para modal de movimentação de estoque de loja
   const [movimentacaoLojaId, setMovimentacaoLojaId] = useState("");
@@ -849,6 +850,13 @@ export function Dashboard() {
             );
             return { data: { alertas: [] } };
           }),
+          api.get("/relatorios/alertas-pelucia-gigante").catch((err) => {
+            console.error(
+              "Erro ao carregar alertas de pelucia gigante:",
+              err.message,
+            );
+            return { data: { alertas: [] } };
+          }),
           api.get("/relatorios/machine-pay-mes").catch((err) => {
             console.error(
               "Erro ao carregar total Machine Pay do mês:",
@@ -866,6 +874,7 @@ export function Dashboard() {
         alertasRes,
         balancoRes,
         bomDesempenhoRes,
+        peluciaGiganteRes,
         machinePayMesRes,
         lojasRes,
         maquinasRes,
@@ -880,6 +889,7 @@ export function Dashboard() {
           alertasRes,
           balancoRes,
           bomDesempenhoRes,
+          peluciaGiganteRes,
           machinePayMesRes,
           lojasRes,
           maquinasRes,
@@ -912,6 +922,7 @@ export function Dashboard() {
         alertasRes = { data: { alertas: [] } };
         balancoRes = { data: null };
         setAlertasBomDesempenho([]);
+        setAlertasPeluciaGigante([]);
       }
 
       console.log("Lojas carregadas:", lojasRes.data);
@@ -934,6 +945,7 @@ export function Dashboard() {
         loading: false,
       });
       setAlertasBomDesempenho(bomDesempenhoRes?.data?.alertas || []);
+      setAlertasPeluciaGigante(peluciaGiganteRes?.data?.alertas || []);
       setMachinePayMesTotal(machinePayMesRes?.data?.liquidoTotal || 0);
       setLojas(lojasRes.data || []);
       setMaquinas(maquinasRes.data || []);
@@ -953,6 +965,7 @@ export function Dashboard() {
       });
       setLojas([]);
       setMaquinas([]);
+      setAlertasPeluciaGigante([]);
     }
   }, [usuario]);
 
@@ -2414,6 +2427,44 @@ export function Dashboard() {
                   </p>
                   <p className="text-xs opacity-75 mt-1">
                     ⚠️ Pelúcias fora do esperado
+                  </p>
+                </div>
+              </div>
+              <div
+                className="stat-card bg-linear-to-br from-fuchsia-600 to-rose-600 p-4 sm:p-6 rounded-xl shadow-md flex flex-col justify-between min-h-30 cursor-pointer"
+                onClick={() => {
+                  const alertSection = document.getElementById(
+                    "alertas-pelucia-gigante",
+                  );
+                  if (alertSection) {
+                    alertSection.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}
+              >
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium opacity-90">
+                      Pelucia gigante
+                    </h3>
+                    <svg
+                      className="w-8 h-8 opacity-80"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9"
+                      />
+                    </svg>
+                  </div>
+                  <p className="text-3xl font-bold">
+                    {alertasPeluciaGigante.length}
+                  </p>
+                  <p className="text-xs opacity-75 mt-1">
+                    Perto da meta programada
                   </p>
                 </div>
               </div>
@@ -4109,6 +4160,102 @@ export function Dashboard() {
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {usuario?.role === "ADMIN" && alertasPeluciaGigante.length > 0 && (
+          <div
+            className="card mb-8 border-l-4 border-fuchsia-500"
+            id="alertas-pelucia-gigante"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <span className="bg-fuchsia-100 p-2 rounded-lg">!</span>
+                Pelucia gigante perto de sair
+              </h2>
+              <span className="badge bg-fuchsia-100 text-fuchsia-700 border-fuchsia-300">
+                {alertasPeluciaGigante.length}{" "}
+                {alertasPeluciaGigante.length === 1 ? "alerta" : "alertas"}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {alertasPeluciaGigante.slice(0, 5).map((alerta) => (
+                <div
+                  key={alerta.id}
+                  className="p-5 rounded-xl shadow-sm bg-fuchsia-50 border border-fuchsia-200"
+                >
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <span className="font-bold text-lg text-gray-900">
+                          {alerta.maquinaNome || "Maquina"}
+                        </span>
+                        {alerta.lojaNome && (
+                          <span className="rounded-full bg-white px-3 py-1 text-sm font-bold text-fuchsia-700 border border-fuchsia-200">
+                            {alerta.lojaNome}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-700">
+                        Desde a ultima saida, faltam{" "}
+                        <strong>{alerta.jogadasFaltantes}</strong> jogada(s)
+                        para bater a meta programada.
+                      </p>
+                      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
+                        <div className="rounded-xl bg-white p-3 border border-fuchsia-100">
+                          <p className="text-xs font-bold uppercase text-gray-500">
+                            Contador atual
+                          </p>
+                          <p className="text-2xl font-black text-gray-900">
+                            {Number(alerta.contadorAtual || 0).toFixed(0)}
+                          </p>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 border border-fuchsia-100">
+                          <p className="text-xs font-bold uppercase text-gray-500">
+                            Alerta inicia
+                          </p>
+                          <p className="text-2xl font-black text-fuchsia-700">
+                            {Number(alerta.contadorAvisoInicio || 0).toFixed(0)}
+                          </p>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 border border-fuchsia-100">
+                          <p className="text-xs font-bold uppercase text-gray-500">
+                            Meta contador
+                          </p>
+                          <p className="text-2xl font-black text-green-700">
+                            {Number(alerta.contadorMeta || 0).toFixed(0)}
+                          </p>
+                        </div>
+                        <div className="rounded-xl bg-white p-3 border border-fuchsia-100">
+                          <p className="text-xs font-bold uppercase text-gray-500">
+                            Faltam
+                          </p>
+                          <p className="text-2xl font-black text-rose-700">
+                            {Number(alerta.contadorFaltante || 0).toFixed(0)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            no contador
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold text-fuchsia-700">
+                        {Number(alerta.jogadasFaltantes || 0).toFixed(0)}
+                      </p>
+                      <p className="text-xs mt-1 text-fuchsia-700">
+                        jogadas restantes
+                      </p>
+                    </div>
+                  </div>
+                  {alerta.mensagem && (
+                    <p className="text-sm text-gray-600 mt-3 italic">
+                      {alerta.mensagem}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
