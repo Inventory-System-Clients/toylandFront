@@ -21,6 +21,7 @@ import { Movimentacoes } from "./pages/Movimentacoes";
 import ManutencaoPage from "./pages/ManutencaoPage";
 import { Graficos } from "./pages/Graficos";
 import { Relatorios } from "./pages/Relatorios";
+import { MachinePay } from "./pages/MachinePay";
 import { Sangrias } from "./pages/Sangrias";
 import { StyleGuide } from "./pages/StyleGuide";
 import { Estoque } from "./pages/Estoque";
@@ -246,6 +247,14 @@ function App() {
             element={
               <PrivateRoute adminOnly>
                 <Relatorios />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/machine-pay"
+            element={
+              <PrivateRoute adminOnly>
+                <MachinePay />
               </PrivateRoute>
             }
           />
