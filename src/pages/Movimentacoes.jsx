@@ -1205,31 +1205,33 @@ export function Movimentacoes() {
             action={null}
           />
           <div className="flex flex-wrap gap-3">
-            <button
+                <button
               className="px-6 py-3 bg-yellow-500 text-white rounded hover:bg-yellow-600 font-bold shadow text-base"
               onClick={() => setShowForm((v) => !v)}
             >
               {showForm ? "Cancelar" : "Nova Movimentação"}
             </button>
-            <button
+            {usuario?.role === "ADMIN" && (
+              <>
+                <button
               className="px-6 py-3 bg-rose-600 text-white rounded hover:bg-rose-700 font-bold shadow text-base"
               onClick={() => navigate("/sangrias")}
             >
               Sangria
             </button>
-            <button
+                <button
               className="px-6 py-3 bg-blue-700 text-white rounded hover:bg-blue-800 font-bold shadow text-base"
               onClick={() => setModalRegistrarDinheiro(true)}
             >
               Registrar Dinheiro
             </button>
-            {["ADMIN", "FUNCIONARIO"].includes(usuario?.role) && (
               <button
                 className="px-6 py-3 bg-orange-600 text-white rounded hover:bg-orange-700 font-bold shadow text-base"
                 onClick={abrirGastoVariavel}
               >
                 Gastos Variáveis
               </button>
+              </>
             )}
           </div>
         </div>
