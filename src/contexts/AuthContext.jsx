@@ -70,6 +70,8 @@ export function AuthProvider({ children }) {
   };
 
   const isAdmin = () => usuario?.role === "ADMIN";
+  const isMachinePay = () => usuario?.role === "MACHINEPAY";
+  const hasRole = (...roles) => roles.includes(usuario?.role);
 
   return (
     <AuthContext.Provider
@@ -80,6 +82,8 @@ export function AuthProvider({ children }) {
         registrar,
         logout,
         isAdmin,
+        isMachinePay,
+        hasRole,
         signed: !!usuario,
       }}
     >

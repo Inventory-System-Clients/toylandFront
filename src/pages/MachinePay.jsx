@@ -3,6 +3,7 @@ import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import { PageHeader, AlertBox } from "../components/UIComponents";
 import { PageLoader } from "../components/Loading";
+import { useAuth } from "../contexts/AuthContext";
 import api from "../services/api";
 
 const formatarMoeda = (valor) =>
@@ -49,6 +50,13 @@ const formatarValorInput = (valor) =>
   });
 
 export function MachinePay() {
+  const { isAdmin } = useAuth();
+  const admin = isAdmin();
+
+  const hoje = new Date().toISOString().slice(0, 10);
+  const [periodoInicio, setPeriodoInicio] = useState(hoje);
+  const [periodoFim, setPeriodoFim] = useState(hoje);
+
   const [maquinas, setMaquinas] = useState([]);
   const [statuses, setStatuses] = useState({});
   const [transacoesPorMaquina, setTransacoesPorMaquina] = useState({});
@@ -154,8 +162,11 @@ export function MachinePay() {
     try {
       setBuscandoTransacoesId(maquina.id);
       setError("");
+      const params = admin
+        ? `?inicio=${periodoInicio}T00:00&fim=${periodoFim}T23:59`
+        : "";
       const response = await api.get(
-        `/machine-pay/maquinas/${maquina.id}/transacoes-24h`,
+        `/machine-pay/maquinas/${maquina.id}/transacoes-24h${params}`,
       );
       setTransacoesPorMaquina((prev) => ({
         ...prev,
@@ -304,25 +315,51 @@ export function MachinePay() {
                     </button>
                   </div>
 
-                  <div className="mt-6 flex flex-col gap-3 border-t border-gray-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900">
-                        Transacoes das ultimas 24h
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        Esta consulta so chama a Machine Pay quando voce clicar.
-                      </p>
+                  <div className="mt-6 border-t border-gray-200 pt-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">
+                          {admin ? "Transacoes por periodo" : "Transacoes das ultimas 24h"}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          Esta consulta so chama a Machine Pay quando voce clicar.
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:items-end">
+                        {admin && (
+                          <div className="flex gap-2 items-center flex-wrap">
+                            <div className="flex gap-1 items-center">
+                              <label className="text-xs font-semibold text-gray-600">De</label>
+                              <input
+                                type="date"
+                                value={periodoInicio}
+                                onChange={(e) => setPeriodoInicio(e.target.value)}
+                                className="border border-gray-300 rounded px-2 py-1 text-sm"
+                              />
+                            </div>
+                            <div className="flex gap-1 items-center">
+                              <label className="text-xs font-semibold text-gray-600">Ate</label>
+                              <input
+                                type="date"
+                                value={periodoFim}
+                                onChange={(e) => setPeriodoFim(e.target.value)}
+                                className="border border-gray-300 rounded px-2 py-1 text-sm"
+                              />
+                            </div>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={() => buscarTransacoes(maquinaSelecionada)}
+                          disabled={buscandoTransacoesId === maquinaSelecionada.id}
+                        >
+                          {buscandoTransacoesId === maquinaSelecionada.id
+                            ? "Buscando..."
+                            : "Buscar transacoes"}
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={() => buscarTransacoes(maquinaSelecionada)}
-                      disabled={buscandoTransacoesId === maquinaSelecionada.id}
-                    >
-                      {buscandoTransacoesId === maquinaSelecionada.id
-                        ? "Buscando..."
-                        : "Buscar transacoes"}
-                    </button>
                   </div>
 
                   {transacoesPorMaquina[maquinaSelecionada.id] ? (

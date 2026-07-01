@@ -253,7 +253,7 @@ function App() {
           <Route
             path="/machine-pay"
             element={
-              <PrivateRoute adminOnly>
+              <PrivateRoute roles={["ADMIN", "MACHINEPAY"]}>
                 <MachinePay />
               </PrivateRoute>
             }

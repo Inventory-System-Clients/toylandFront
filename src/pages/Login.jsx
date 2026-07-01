@@ -7,7 +7,7 @@ export function Login() {
   const [senha, setSenha] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isMachinePay } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -18,7 +18,7 @@ export function Login() {
     const result = await login(email, senha);
 
     if (result.success) {
-      navigate("/");
+      navigate(isMachinePay() ? "/machine-pay" : "/");
     } else {
       setError(result.error);
     }
