@@ -15,6 +15,7 @@ export function MaquinaForm() {
     codigo: "",
     nome: "",
     machinePayPosId: "",
+    machinePayUsrId: "",
     loja_id: "",
     tipo: "",
     capacidadePadrao: "",
@@ -68,6 +69,7 @@ export function MaquinaForm() {
         codigo: response.data.codigo || "",
         nome: response.data.nome || "",
         machinePayPosId: response.data.machinePayPosId || "",
+        machinePayUsrId: response.data.machinePayUsrId || "",
         loja_id: response.data.lojaId ? String(response.data.lojaId) : "",
         tipo: response.data.tipo || "",
         capacidadePadrao: response.data.capacidadePadrao || "",
@@ -135,6 +137,7 @@ export function MaquinaForm() {
         codigo: formData.codigo.trim(),
         nome: formData.nome.trim(),
         machinePayPosId: formData.machinePayPosId?.trim() || null,
+        machinePayUsrId: formData.machinePayUsrId?.trim() || null,
         lojaId: formData.loja_id,
         tipo: formData.tipo?.trim() || null,
         capacidadePadrao: parseInt(formData.capacidadePadrao, 10) || 0,
@@ -250,7 +253,7 @@ export function MaquinaForm() {
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    ID da Machine Pay
+                    ID da Machine Pay (POS ID)
                   </label>
                   <input
                     type="text"
@@ -263,6 +266,50 @@ export function MaquinaForm() {
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     POS ID usado para buscar Pix e cartão automaticamente.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    ID do Cliente Machine Pay (Usr ID)
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      name="machinePayUsrId"
+                      value={formData.machinePayUsrId}
+                      onChange={handleChange}
+                      className="input-field flex-1"
+                      placeholder="Ex: 5999255357165795"
+                      inputMode="numeric"
+                    />
+                    <button
+                      type="button"
+                      className="btn-secondary text-sm px-3 whitespace-nowrap"
+                      disabled={!formData.machinePayPosId}
+                      onClick={async () => {
+                        if (!formData.machinePayPosId) return;
+                        try {
+                          const res = await api.get(
+                            `/machine-pay/descobrir-usr/${formData.machinePayPosId}`
+                          );
+                          if (res.data?.usrId) {
+                            setFormData((prev) => ({
+                              ...prev,
+                              machinePayUsrId: res.data.usrId,
+                            }));
+                          }
+                        } catch {
+                          alert("Nao foi possivel descobrir o usr. Verifique o POS ID e o MACHINE_PAY_USR no .env do backend.");
+                        }
+                      }}
+                    >
+                      Auto-descobrir
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Necessario para consulta de status Online/Offline em tempo real.
+                    Clique em Auto-descobrir apos preencher o POS ID.
                   </p>
                 </div>
 

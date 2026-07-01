@@ -264,7 +264,17 @@ export function MachinePay() {
                     </div>
                     {status?.consultadoEm && (
                       <p className="text-xs text-gray-400 mt-3">
-                        Atualizado em {formatarDataHora(status.consultadoEm)}
+                        Consultado em {formatarDataHora(status.consultadoEm)}
+                      </p>
+                    )}
+                    {status?.ultimaTransacaoEm && (
+                      <p className="text-xs text-amber-600 mt-1 font-medium">
+                        Ultima tx: {status.ultimaTransacaoEm}
+                      </p>
+                    )}
+                    {status && !status.ultimaTransacaoEm && status.status !== "nao consultado" && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Sem transacoes recentes
                       </p>
                     )}
                   </button>
