@@ -66,8 +66,9 @@ const formatarValorInput = (valor) =>
   });
 
 export function MachinePay() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isMachinePay } = useAuth();
   const admin = isAdmin();
+  const machinePayUser = isMachinePay();
 
   const hoje = new Date().toISOString().slice(0, 10);
   const [periodoInicio, setPeriodoInicio] = useState(hoje);
@@ -392,17 +393,19 @@ export function MachinePay() {
                             }
                           </p>
                         </div>
-                        <div className="rounded-lg border border-gray-200 bg-white p-4">
-                          <p className="text-xs font-bold uppercase text-gray-500">
-                            Valor total
-                          </p>
-                          <p className="text-2xl font-black text-emerald-700">
-                            R${" "}
-                            {formatarMoeda(
-                              transacoesPorMaquina[maquinaSelecionada.id].total,
-                            )}
-                          </p>
-                        </div>
+                        {!machinePayUser && (
+                          <div className="rounded-lg border border-gray-200 bg-white p-4">
+                            <p className="text-xs font-bold uppercase text-gray-500">
+                              Valor total
+                            </p>
+                            <p className="text-2xl font-black text-emerald-700">
+                              R${" "}
+                              {formatarMoeda(
+                                transacoesPorMaquina[maquinaSelecionada.id].total,
+                              )}
+                            </p>
+                          </div>
+                        )}
                         <div className="rounded-lg border border-gray-200 bg-white p-4">
                           <p className="text-xs font-bold uppercase text-gray-500">
                             Periodo
