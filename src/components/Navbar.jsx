@@ -248,6 +248,8 @@ export function Navbar() {
                     </svg>
                     Administrador
                   </>
+                ) : usuario?.role === "MACHINEPAY" ? (
+                  "Funcionário Machine"
                 ) : (
                   "Funcionário"
                 )}
@@ -460,6 +462,8 @@ export function Navbar() {
                       </svg>
                       Administrador
                     </>
+                  ) : usuario?.role === "MACHINEPAY" ? (
+                    "Funcionário Machine"
                   ) : (
                     "Funcionário"
                   )}
