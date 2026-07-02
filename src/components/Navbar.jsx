@@ -282,28 +282,32 @@ export function Navbar() {
       {isMenuOpen && (
         <div className="bg-gray-900 border-t border-white/10">
           <div className="px-4 py-3 space-y-2">
-            <Link
-              to="/"
-              onClick={closeMenu}
-              className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                isActive("/")
-                  ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
-                  : "text-gray-300 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              📊 Dashboard
-            </Link>
-            <Link
-              to="/movimentacoes"
-              onClick={closeMenu}
-              className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                isActive("/movimentacoes")
-                  ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
-                  : "text-gray-300 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              📦 Movimentações
-            </Link>
+            {usuario?.role !== "MACHINEPAY" && (
+              <>
+                <Link
+                  to="/"
+                  onClick={closeMenu}
+                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    isActive("/")
+                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                      : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  📊 Dashboard
+                </Link>
+                <Link
+                  to="/movimentacoes"
+                  onClick={closeMenu}
+                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    isActive("/movimentacoes")
+                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                      : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  📦 Movimentações
+                </Link>
+              </>
+            )}
             {usuario?.role === "ADMIN" && (
               <>
                 <Link
@@ -343,39 +347,43 @@ export function Navbar() {
               🧸 Produtos
             </Link>
             )}
-            <Link
-              to="/manutencao"
-              onClick={closeMenu}
-              className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                isActive("/manutencao")
-                  ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
-                  : "text-gray-300 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              🛠️ Manutenção
-            </Link>
-            <Link
-              to="/maquinas"
-              onClick={closeMenu}
-              className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                isActive("/maquinas")
-                  ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
-                  : "text-gray-300 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              🎮 Máquinas
-            </Link>
-            <Link
-              to="/lojas"
-              onClick={closeMenu}
-              className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                isActive("/lojas")
-                  ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
-                  : "text-gray-300 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              🏪 Lojas
-            </Link>
+            {usuario?.role !== "MACHINEPAY" && (
+              <>
+                <Link
+                  to="/manutencao"
+                  onClick={closeMenu}
+                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    isActive("/manutencao")
+                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                      : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  🛠️ Manutenção
+                </Link>
+                <Link
+                  to="/maquinas"
+                  onClick={closeMenu}
+                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    isActive("/maquinas")
+                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                      : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  🎮 Máquinas
+                </Link>
+                <Link
+                  to="/lojas"
+                  onClick={closeMenu}
+                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    isActive("/lojas")
+                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                      : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  🏪 Lojas
+                </Link>
+              </>
+            )}
             {usuario?.role === "ADMIN" && (
             <Link
               to="/produtos-a-comprar"
@@ -413,19 +421,6 @@ export function Navbar() {
                 >
                   📈 Gráficos
                 </Link>
-                {hasRole("ADMIN", "MACHINEPAY") && (
-                <Link
-                  to="/machine-pay"
-                  onClick={closeMenu}
-                  className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                    isActive("/machine-pay")
-                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
-                      : "text-gray-300 hover:bg-white/10 hover:text-white"
-                  }`}
-                >
-                  💳 Machine Pay
-                </Link>
-                )}
                 <Link
                   to="/usuarios"
                   onClick={closeMenu}
@@ -438,6 +433,19 @@ export function Navbar() {
                   👥 Usuários
                 </Link>
               </>
+            )}
+            {hasRole("ADMIN", "MACHINEPAY") && (
+              <Link
+                to="/machine-pay"
+                onClick={closeMenu}
+                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  isActive("/machine-pay")
+                    ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                    : "text-gray-300 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                💳 Machine Pay
+              </Link>
             )}
 
             {/* User Info Mobile */}
