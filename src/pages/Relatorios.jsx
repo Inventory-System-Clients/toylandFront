@@ -618,7 +618,49 @@ export function Relatorios() {
       });
     });
 
-    return { linhas, tiposGastos };
+    const totaisLojas = blocos.map((bloco) => {
+      const loja = bloco.loja || {};
+      const totais = bloco.totais || {};
+      const gastosPorTipo = (bloco.gastosVariaveisPorTipo || []).reduce(
+        (acc, gasto) => {
+          const chave = normalizarChaveExcel(gasto?.tipo || gasto?.nome);
+          if (chave) acc[chave] = Number(gasto?.valor || 0);
+          return acc;
+        },
+        {},
+      );
+
+      const dinheiroMaquinas = toNumber(totais.valorDinheiroMaquinas);
+      const cartaoPixMaquinasBruto = toNumber(
+        totais.valorCartaoPixMaquinasBruto,
+      );
+      const cartaoPixMaquinasLiquido = toNumber(
+        totais.valorCartaoPixMaquinasLiquido,
+      );
+      const dinheiroLoja = toNumber(totais.valorDinheiroLoja);
+      const cartaoPixLojaBruto = toNumber(totais.valorCartaoPixLoja);
+      const cartaoPixLojaLiquido = toNumber(totais.valorCartaoPixLiquidoLoja);
+
+      return {
+        loja: loja.nome || "-",
+        fichas: toNumber(totais.fichas),
+        saidaBicho: toNumber(totais.produtosSairam),
+        produtosEntraram: toNumber(totais.produtosEntraram),
+        dinheiro: dinheiroLoja + dinheiroMaquinas,
+        cartaoPixBruto: cartaoPixLojaBruto + cartaoPixMaquinasBruto,
+        cartaoPixLiquido: cartaoPixLojaLiquido + cartaoPixMaquinasLiquido,
+        taxaCartao: toNumber(totais.taxaDeCartao),
+        valorBruto: toNumber(totais.valorBrutoConsolidadoLojaMaquinas),
+        custoFixo: toNumber(totais.gastoFixoTotalPeriodo),
+        custoVariavel: toNumber(totais.gastoVariavelTotalPeriodo),
+        custoProdutos: toNumber(totais.gastoProdutosTotalPeriodo),
+        custoTotal: toNumber(totais.gastoTotalPeriodo),
+        lucroLiquido: toNumber(totais.valorLiquidoConsolidadoLojaMaquinas),
+        gastosPorTipo,
+      };
+    });
+
+    return { linhas, tiposGastos, totaisLojas };
   };
 
   const baixarArquivoExcel = (html, nomeArquivo) => {
@@ -1132,7 +1174,7 @@ export function Relatorios() {
   };
 
   const handleExportarExcel = () => {
-    const { linhas, tiposGastos } = montarDadosExcel();
+    const { linhas, tiposGastos, totaisLojas } = montarDadosExcel();
 
     if (!linhas.length) {
       Swal.fire({
@@ -1219,6 +1261,84 @@ export function Relatorios() {
       )
       .join("");
 
+    const colunasTotaisLoja = [
+      { titulo: "Loja", valor: (linha) => linha.loja },
+      { titulo: "Fichas", valor: (linha) => linha.fichas },
+      { titulo: "Saída de bicho", valor: (linha) => linha.saidaBicho },
+      {
+        titulo: "Produtos entraram",
+        valor: (linha) => linha.produtosEntraram,
+      },
+      { titulo: "Dinheiro total", valor: (linha) => linha.dinheiro, moeda: true },
+      {
+        titulo: "Cartão/Pix bruto total",
+        valor: (linha) => linha.cartaoPixBruto,
+        moeda: true,
+      },
+      {
+        titulo: "Cartão/Pix líquido total",
+        valor: (linha) => linha.cartaoPixLiquido,
+        moeda: true,
+      },
+      {
+        titulo: "Taxa de cartão",
+        valor: (linha) => linha.taxaCartao,
+        moeda: true,
+      },
+      {
+        titulo: "Valor bruto da loja",
+        valor: (linha) => linha.valorBruto,
+        moeda: true,
+      },
+      {
+        titulo: "Custo fixo",
+        valor: (linha) => linha.custoFixo,
+        moeda: true,
+      },
+      {
+        titulo: "Custo variável total",
+        valor: (linha) => linha.custoVariavel,
+        moeda: true,
+      },
+      {
+        titulo: "Custo produtos",
+        valor: (linha) => linha.custoProdutos,
+        moeda: true,
+      },
+      {
+        titulo: "Custo total",
+        valor: (linha) => linha.custoTotal,
+        moeda: true,
+      },
+      {
+        titulo: "Lucro líquido da loja",
+        valor: (linha) => linha.lucroLiquido,
+        moeda: true,
+      },
+      ...tiposGastos.map((tipo) => ({
+        titulo: `Custo variável - ${tipo.nome}`,
+        valor: (linha) => linha.gastosPorTipo[tipo.chave] || 0,
+        moeda: true,
+      })),
+    ];
+    const cabecalhoTotaisLoja = colunasTotaisLoja
+      .map((coluna) => `<th>${escaparCelulaExcel(coluna.titulo)}</th>`)
+      .join("");
+    const corpoTotaisLoja = totaisLojas
+      .map(
+        (linha) =>
+          `<tr>${colunasTotaisLoja
+            .map((coluna) => {
+              const valor = coluna.valor(linha);
+              const conteudo = coluna.moeda
+                ? formatarNumeroExcel(valor)
+                : valor;
+              return `<td>${escaparCelulaExcel(conteudo)}</td>`;
+            })
+            .join("")}</tr>`,
+      )
+      .join("");
+
     const lojaNome =
       relatorio?.tipo === "todas-lojas"
         ? "Todas as lojas"
@@ -1241,6 +1361,12 @@ export function Relatorios() {
           <table>
             <thead><tr>${cabecalho}</tr></thead>
             <tbody>${corpo}</tbody>
+          </table>
+          <br />
+          <h3>Total da Loja</h3>
+          <table>
+            <thead><tr>${cabecalhoTotaisLoja}</tr></thead>
+            <tbody>${corpoTotaisLoja}</tbody>
           </table>
         </body>
       </html>
