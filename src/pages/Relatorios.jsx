@@ -524,6 +524,117 @@ export function Relatorios() {
     return data.toLocaleString("pt-BR");
   };
 
+  const normalizarChaveExcel = (valor) =>
+    normalizarTextoBusca(valor).replace(/[^a-z0-9]+/g, "_");
+
+  const escaparCelulaExcel = (valor) =>
+    String(valor ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  const formatarNumeroExcel = (valor) =>
+    Number(valor || 0).toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+
+  const obterBlocosRelatorioExcel = () => {
+    if (!relatorio) return [];
+
+    if (relatorio.tipo === "todas-lojas") {
+      return Array.isArray(relatorio.lojas) ? relatorio.lojas : [];
+    }
+
+    return [
+      {
+        loja: relatorio.loja,
+        totais: relatorio.totais,
+        maquinas: relatorio.maquinas || [],
+        gastosVariaveisPorTipo: relatorio.gastosVariaveisPorTipo || [],
+      },
+    ];
+  };
+
+  const montarDadosExcel = () => {
+    const blocos = obterBlocosRelatorioExcel();
+    const tiposMap = new Map();
+
+    blocos.forEach((bloco) => {
+      (bloco.gastosVariaveisPorTipo || []).forEach((gasto) => {
+        const chave = normalizarChaveExcel(gasto?.tipo || gasto?.nome);
+        if (chave && !tiposMap.has(chave)) {
+          tiposMap.set(chave, gasto?.tipo || gasto?.nome || "Sem tipo");
+        }
+      });
+    });
+
+    const tiposGastos = Array.from(tiposMap.entries()).map(
+      ([chave, nome]) => ({ chave, nome }),
+    );
+
+    const linhas = blocos.flatMap((bloco) => {
+      const loja = bloco.loja || {};
+      const gastosPorTipo = (bloco.gastosVariaveisPorTipo || []).reduce(
+        (acc, gasto) => {
+          const chave = normalizarChaveExcel(gasto?.tipo || gasto?.nome);
+          if (chave) acc[chave] = Number(gasto?.valor || 0);
+          return acc;
+        },
+        {},
+      );
+
+      return (bloco.maquinas || []).map((item, index) => {
+        const maquina = item.maquina || {};
+        const totais = item.totais || {};
+        const valorFicha = toNumber(
+          maquina.valorFicha ??
+            loja.valorFichaPadrao ??
+            relatorio?.loja?.valorFichaPadrao ??
+            obterValorFichaPadraoDaLojaSelecionada(),
+        );
+        const lucroMaquina = toNumber(totais.fichas) * valorFicha;
+
+        return {
+          numero: index + 1,
+          loja: loja.nome || "-",
+          maquina: maquina.nome || `Máquina ${index + 1}`,
+          codigo: maquina.codigo || "-",
+          fichas: toNumber(totais.fichas),
+          saidaBicho: toNumber(totais.produtosSairam),
+          produtosEntraram: toNumber(totais.produtosEntraram),
+          dinheiro: toNumber(totais.dinheiro),
+          cartaoPixBruto: toNumber(totais.cartaoPix),
+          cartaoPixLiquido: toNumber(totais.cartaoPixLiquido),
+          taxaCartao: toNumber(totais.taxaDeCartao),
+          faturamentoBruto: toNumber(totais.faturamentoBruto),
+          custoProdutosSairam: toNumber(totais.custoProdutosSairam),
+          lucroMaquina,
+          lucroLiquido: toNumber(totais.lucroLiquido),
+          ticketPorPremio: toNumber(totais.ticketPorPremio),
+          gastosPorTipo,
+        };
+      });
+    });
+
+    return { linhas, tiposGastos };
+  };
+
+  const baixarArquivoExcel = (html, nomeArquivo) => {
+    const blob = new Blob(["\ufeff", html], {
+      type: "application/vnd.ms-excel;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = nomeArquivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const validarPeriodoFechamentoMensal = () => {
     if (!dataInicio || !dataFim) {
       return { valido: false, motivo: "Selecione data inicial e final." };
@@ -1020,6 +1131,126 @@ export function Relatorios() {
     window.print();
   };
 
+  const handleExportarExcel = () => {
+    const { linhas, tiposGastos } = montarDadosExcel();
+
+    if (!linhas.length) {
+      Swal.fire({
+        icon: "info",
+        title: "Sem máquinas para exportar",
+        text: "Gere um relatório com dados de máquinas antes de exportar.",
+      });
+      return;
+    }
+
+    const colunas = [
+      { titulo: "Nome da máquina", valor: (linha) => linha.maquina },
+      { titulo: "Código da máquina", valor: (linha) => linha.codigo },
+      { titulo: "Loja", valor: (linha) => linha.loja },
+      { titulo: "Fichas", valor: (linha) => linha.fichas },
+      { titulo: "Saída de bicho", valor: (linha) => linha.saidaBicho },
+      {
+        titulo: "Produtos entraram",
+        valor: (linha) => linha.produtosEntraram,
+      },
+      { titulo: "Dinheiro", valor: (linha) => linha.dinheiro, moeda: true },
+      {
+        titulo: "Cartão/Pix bruto",
+        valor: (linha) => linha.cartaoPixBruto,
+        moeda: true,
+      },
+      {
+        titulo: "Cartão/Pix líquido",
+        valor: (linha) => linha.cartaoPixLiquido,
+        moeda: true,
+      },
+      {
+        titulo: "Taxa de cartão",
+        valor: (linha) => linha.taxaCartao,
+        moeda: true,
+      },
+      {
+        titulo: "Faturamento bruto",
+        valor: (linha) => linha.faturamentoBruto,
+        moeda: true,
+      },
+      {
+        titulo: "Custo dos produtos que saíram",
+        valor: (linha) => linha.custoProdutosSairam,
+        moeda: true,
+      },
+      {
+        titulo: "Lucro da máquina",
+        valor: (linha) => linha.lucroMaquina,
+        moeda: true,
+      },
+      {
+        titulo: "Lucro líquido da máquina",
+        valor: (linha) => linha.lucroLiquido,
+        moeda: true,
+      },
+      {
+        titulo: "Ticket por prêmio",
+        valor: (linha) => linha.ticketPorPremio,
+        moeda: true,
+      },
+      ...tiposGastos.map((tipo) => ({
+        titulo: `Custo variável - ${tipo.nome}`,
+        valor: (linha) => linha.gastosPorTipo[tipo.chave] || 0,
+        moeda: true,
+      })),
+    ];
+
+    const cabecalho = colunas
+      .map((coluna) => `<th>${escaparCelulaExcel(coluna.titulo)}</th>`)
+      .join("");
+    const corpo = linhas
+      .map(
+        (linha) =>
+          `<tr>${colunas
+            .map((coluna) => {
+              const valor = coluna.valor(linha);
+              const conteudo = coluna.moeda
+                ? formatarNumeroExcel(valor)
+                : valor;
+              return `<td>${escaparCelulaExcel(conteudo)}</td>`;
+            })
+            .join("")}</tr>`,
+      )
+      .join("");
+
+    const lojaNome =
+      relatorio?.tipo === "todas-lojas"
+        ? "Todas as lojas"
+        : relatorio?.loja?.nome || "Loja";
+    const titulo = `Relatório de Máquinas - ${lojaNome}`;
+    const periodo = `${formatarDataExibicao(dataInicio)} até ${formatarDataExibicao(dataFim)}`;
+    const html = `
+      <html>
+        <head>
+          <meta charset="UTF-8" />
+          <style>
+            table { border-collapse: collapse; }
+            th, td { border: 1px solid #999; padding: 6px; }
+            th { background: #f2f2f2; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <h2>${escaparCelulaExcel(titulo)}</h2>
+          <p><strong>Período:</strong> ${escaparCelulaExcel(periodo)}</p>
+          <table>
+            <thead><tr>${cabecalho}</tr></thead>
+            <tbody>${corpo}</tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    const lojaArquivo = normalizarChaveExcel(lojaNome) || "relatorio";
+    const nomeArquivo = `relatorio-maquinas-${lojaArquivo}-${dataInicio}-${dataFim}.xls`;
+
+    baixarArquivoExcel(html, nomeArquivo);
+  };
+
   const gastosFixosComValor = gastosFixosLoja
     .map((item) => ({
       id: item.id,
@@ -1163,6 +1394,13 @@ export function Relatorios() {
               className="btn-secondary"
             >
               🖨️ Imprimir
+            </button>
+            <button
+              onClick={handleExportarExcel}
+              disabled={!relatorio}
+              className="btn-secondary"
+            >
+              📥 Exportar Excel
             </button>
           </div>
         </div>
