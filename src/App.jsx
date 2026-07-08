@@ -129,7 +129,7 @@ function App() {
           <Route
             path="/maquinas/nova"
             element={
-              <PrivateRoute>
+              <PrivateRoute adminOnly>
                 <MaquinaForm />
               </PrivateRoute>
             }
@@ -137,7 +137,7 @@ function App() {
           <Route
             path="/maquinas/:id/editar"
             element={
-              <PrivateRoute>
+              <PrivateRoute adminOnly>
                 <MaquinaForm />
               </PrivateRoute>
             }

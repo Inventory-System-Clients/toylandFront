@@ -180,7 +180,10 @@ export function Maquinas() {
         </Badge>
       ),
     },
-    {
+  ];
+
+  if (usuario?.role === "ADMIN") {
+    columns.push({
       key: "acoes",
       label: "Ações",
       render: (maquina) => (
@@ -205,8 +208,8 @@ export function Maquinas() {
           </button>
         </div>
       ),
-    },
-  ];
+    });
+  }
 
   if (loading) return <PageLoader />;
 
@@ -304,12 +307,18 @@ export function Maquinas() {
               message={
                 filtroLoja || filtroNome
                   ? "Não há máquinas cadastradas nesta loja. Experimente selecionar outra loja."
-                  : "Cadastre sua primeira máquina para começar!"
+                  : usuario?.role === "ADMIN"
+                    ? "Cadastre sua primeira máquina para começar!"
+                    : "Você ainda não tem acesso a nenhuma máquina."
               }
-              action={{
-                label: "Nova Máquina",
-                onClick: () => navigate("/maquinas/nova"),
-              }}
+              action={
+                usuario?.role === "ADMIN"
+                  ? {
+                      label: "Nova Máquina",
+                      onClick: () => navigate("/maquinas/nova"),
+                    }
+                  : undefined
+              }
             />
           )}
         </div>
