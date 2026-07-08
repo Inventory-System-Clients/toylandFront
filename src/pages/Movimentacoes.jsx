@@ -53,6 +53,27 @@ const formatarDataHora = (valor) => {
   });
 };
 
+const formatarDataHoraParaInput = (valor) => {
+  if (!valor) return "";
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return "";
+  const pad = (numero) => String(numero).padStart(2, "0");
+  return `${data.getFullYear()}-${pad(data.getMonth() + 1)}-${pad(
+    data.getDate(),
+  )}T${pad(data.getHours())}:${pad(data.getMinutes())}`;
+};
+
+const parseNumeroInteiro = (valor, permitirNulo = false) => {
+  if (valor === "" || valor === null || valor === undefined) {
+    return permitirNulo ? null : 0;
+  }
+  const numero = parseInt(valor, 10);
+  if (Number.isNaN(numero)) {
+    return permitirNulo ? null : 0;
+  }
+  return numero;
+};
+
 export function Movimentacoes() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -100,6 +121,7 @@ export function Movimentacoes() {
   const [maquinas, setMaquinas] = useState([]);
   const [produtos, setProdutos] = useState([]);
   const [lojas, setLojas] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
 
   // UI States
   const [loading, setLoading] = useState(true);
@@ -120,12 +142,18 @@ export function Movimentacoes() {
   // Filtros Movimentações
   const [filtroLojaForm, setFiltroLojaForm] = useState("");
   const [filtroLojaListagem, setFiltroLojaListagem] = useState("");
+  const [filtroMaquinaListagem, setFiltroMaquinaListagem] = useState("");
+  const [filtroDataInicioListagem, setFiltroDataInicioListagem] = useState("");
+  const [filtroDataFimListagem, setFiltroDataFimListagem] = useState("");
+  const [filtroUsuarioListagem, setFiltroUsuarioListagem] = useState("");
+
+  const QUANTIDADE_PADRAO_HISTORICO = 8;
 
   // Edição
   const [editandoMovimentacao, setEditandoMovimentacao] = useState(null);
-  const [formEdicao, setFormEdicao] = useState({
-    abastecidas: "",
-  });
+  const [salvandoEdicaoMovimentacao, setSalvandoEdicaoMovimentacao] =
+    useState(false);
+  const [formEdicao, setFormEdicao] = useState(null);
 
   // Formulário Nova Movimentação
   const [formData, setFormData] = useState({
@@ -434,17 +462,20 @@ export function Movimentacoes() {
   const carregarDados = async () => {
     try {
       setLoading(true);
-      const [movRes, maqRes, prodRes, lojasRes] = await Promise.all([
-        api.get("/movimentacoes"),
-        api.get("/maquinas"),
-        api.get("/produtos"),
-        api.get("/lojas"),
-      ]);
+      const [movRes, maqRes, prodRes, lojasRes, usuariosRes] =
+        await Promise.all([
+          api.get("/movimentacoes"),
+          api.get("/maquinas"),
+          api.get("/produtos"),
+          api.get("/lojas"),
+          api.get("/usuarios").catch(() => ({ data: [] })),
+        ]);
 
       setMovimentacoes(movRes.data || []);
       setMaquinas(maqRes.data || []);
       setProdutos(prodRes.data || []);
       setLojas(lojasRes.data || []);
+      setUsuarios(usuariosRes.data || []);
     } catch (err) {
       console.error("Erro ao carregar dados:", err);
       setError("Erro ao carregar dados iniciais.");
@@ -900,28 +931,144 @@ export function Movimentacoes() {
   const iniciarEdicao = (movimentacao) => {
     setEditandoMovimentacao(movimentacao);
     setFormEdicao({
-      abastecidas: movimentacao.abastecidas || 0,
+      dataColeta: formatarDataHoraParaInput(
+        movimentacao.dataColeta || movimentacao.createdAt,
+      ),
+      totalPre: String(movimentacao.totalPre ?? 0),
+      sairam: String(movimentacao.sairam ?? 0),
+      abastecidas: String(movimentacao.abastecidas ?? 0),
+      totalPos: String(movimentacao.totalPos ?? 0),
+      fichas: String(movimentacao.fichas ?? 0),
+      contadorIn:
+        movimentacao.contadorIn === null ||
+        movimentacao.contadorIn === undefined
+          ? ""
+          : String(movimentacao.contadorIn),
+      contadorOut:
+        movimentacao.contadorOut === null ||
+        movimentacao.contadorOut === undefined
+          ? ""
+          : String(movimentacao.contadorOut),
+      observacoes: movimentacao.observacoes || "",
+      produtos: Array.isArray(movimentacao.detalhesProdutos)
+        ? movimentacao.detalhesProdutos.map((p) => ({
+            produtoId: p.produtoId || "",
+            quantidadeSaiu: String(p.quantidadeSaiu ?? 0),
+            quantidadeAbastecida: String(p.quantidadeAbastecida ?? 0),
+            retiradaProduto: String(p.retiradaProduto ?? 0),
+          }))
+        : [],
     });
   };
 
   const cancelarEdicao = () => {
     setEditandoMovimentacao(null);
-    setFormEdicao({
-      abastecidas: "",
+    setFormEdicao(null);
+  };
+
+  // Ao alterar Total Pré, Saíram ou Abastecidas, recalcula automaticamente o
+  // Total Atual (totalPre - sairam + abastecidas) e, quando há apenas um
+  // produto na movimentação, mantém as quantidades dele sincronizadas com os
+  // campos de cima (é o caso mais comum: 1 produto = os mesmos números).
+  const atualizarCampoEdicao = (campo, valor) => {
+    setFormEdicao((prev) => {
+      if (!prev) return prev;
+      const proximo = { ...prev, [campo]: valor };
+
+      if (["totalPre", "sairam", "abastecidas"].includes(campo)) {
+        const totalPre = parseNumeroInteiro(proximo.totalPre);
+        const sairam = parseNumeroInteiro(proximo.sairam);
+        const abastecidas = parseNumeroInteiro(proximo.abastecidas);
+        proximo.totalPos = String(totalPre - sairam + abastecidas);
+
+        if (proximo.produtos?.length === 1) {
+          proximo.produtos = [
+            {
+              ...proximo.produtos[0],
+              quantidadeSaiu:
+                campo === "sairam" ? valor : proximo.produtos[0].quantidadeSaiu,
+              quantidadeAbastecida:
+                campo === "abastecidas"
+                  ? valor
+                  : proximo.produtos[0].quantidadeAbastecida,
+            },
+          ];
+        }
+      }
+
+      return proximo;
+    });
+  };
+
+  const atualizarProdutoEdicao = (index, campo, valor) => {
+    setFormEdicao((prev) => {
+      if (!prev) return prev;
+      const produtos = [...(prev.produtos || [])];
+      produtos[index] = { ...produtos[index], [campo]: valor };
+      return { ...prev, produtos };
+    });
+  };
+
+  const adicionarProdutoEdicao = () => {
+    setFormEdicao((prev) => ({
+      ...prev,
+      produtos: [
+        ...(prev?.produtos || []),
+        {
+          produtoId: "",
+          quantidadeSaiu: "0",
+          quantidadeAbastecida: "0",
+          retiradaProduto: "0",
+        },
+      ],
+    }));
+  };
+
+  const removerProdutoEdicao = (index) => {
+    setFormEdicao((prev) => {
+      const produtos = [...(prev?.produtos || [])];
+      produtos.splice(index, 1);
+      return { ...prev, produtos };
     });
   };
 
   const salvarEdicao = async () => {
+    if (!editandoMovimentacao || !formEdicao) return;
+
     try {
-      await api.put(`/movimentacoes/${editandoMovimentacao.id}`, {
-        abastecidas: parseInt(formEdicao.abastecidas) || 0,
-      });
+      setSalvandoEdicaoMovimentacao(true);
+
+      const payload = {
+        dataColeta: formEdicao.dataColeta || null,
+        totalPre: parseNumeroInteiro(formEdicao.totalPre),
+        sairam: parseNumeroInteiro(formEdicao.sairam),
+        abastecidas: parseNumeroInteiro(formEdicao.abastecidas),
+        totalPos: parseNumeroInteiro(formEdicao.totalPos),
+        fichas: parseNumeroInteiro(formEdicao.fichas),
+        contadorIn: parseNumeroInteiro(formEdicao.contadorIn, true),
+        contadorOut: parseNumeroInteiro(formEdicao.contadorOut, true),
+        observacoes: formEdicao.observacoes || "",
+        produtos: (formEdicao.produtos || [])
+          .filter((p) => p.produtoId)
+          .map((p) => ({
+            produtoId: p.produtoId,
+            quantidadeSaiu: parseNumeroInteiro(p.quantidadeSaiu),
+            quantidadeAbastecida: parseNumeroInteiro(p.quantidadeAbastecida),
+            retiradaProduto: parseNumeroInteiro(p.retiradaProduto),
+          })),
+      };
+
+      await api.put(`/movimentacoes/${editandoMovimentacao.id}`, payload);
       setSuccess("Movimentação atualizada com sucesso!");
       cancelarEdicao();
       carregarDados();
     } catch (error) {
       console.error("Erro ao atualizar:", error);
-      setError("Erro ao atualizar movimentação");
+      setError(
+        error.response?.data?.error || "Erro ao atualizar movimentação",
+      );
+    } finally {
+      setSalvandoEdicaoMovimentacao(false);
     }
   };
   const confirmarExclusaoLoja = async () => {
@@ -1042,12 +1189,49 @@ export function Movimentacoes() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  const movimentacoesFiltradas = filtroLojaListagem
-    ? movimentacoes.filter((mov) => {
-        const maquina = maquinas.find((m) => m.id === mov.maquinaId);
-        return maquina?.lojaId === filtroLojaListagem;
-      })
-    : movimentacoes;
+  const algumFiltroHistoricoAtivo = Boolean(
+    filtroLojaListagem ||
+      filtroMaquinaListagem ||
+      filtroDataInicioListagem ||
+      filtroDataFimListagem ||
+      filtroUsuarioListagem,
+  );
+
+  const movimentacoesFiltradasPorCriterios = movimentacoes.filter((mov) => {
+    if (filtroLojaListagem) {
+      const maquina = maquinas.find((m) => m.id === mov.maquinaId);
+      if (maquina?.lojaId !== filtroLojaListagem) return false;
+    }
+    if (filtroMaquinaListagem && mov.maquinaId !== filtroMaquinaListagem) {
+      return false;
+    }
+    if (filtroUsuarioListagem && mov.usuarioId !== filtroUsuarioListagem) {
+      return false;
+    }
+    const dataMov = new Date(mov.dataColeta || mov.createdAt);
+    if (filtroDataInicioListagem) {
+      const inicio = new Date(`${filtroDataInicioListagem}T00:00:00`);
+      if (dataMov < inicio) return false;
+    }
+    if (filtroDataFimListagem) {
+      const fim = new Date(`${filtroDataFimListagem}T23:59:59`);
+      if (dataMov > fim) return false;
+    }
+    return true;
+  });
+
+  // Sem nenhum filtro selecionado, mostra apenas os últimos registros
+  const movimentacoesFiltradas = algumFiltroHistoricoAtivo
+    ? movimentacoesFiltradasPorCriterios
+    : movimentacoesFiltradasPorCriterios.slice(0, QUANTIDADE_PADRAO_HISTORICO);
+
+  const limparFiltrosHistorico = () => {
+    setFiltroLojaListagem("");
+    setFiltroMaquinaListagem("");
+    setFiltroDataInicioListagem("");
+    setFiltroDataFimListagem("");
+    setFiltroUsuarioListagem("");
+  };
 
   const columns = [
     {
@@ -1512,17 +1696,26 @@ export function Movimentacoes() {
 
         <AvisosMaquinasFaltam lojas={lojas} />
 
-        {/* Filtro por Loja - Apenas para ADMIN */}
+        {/* Filtros do Histórico de Movimentações - Apenas para ADMIN */}
         {usuario?.role === "ADMIN" && (
           <div className="card-gradient mb-6">
-            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="text-2xl">🔍</span>
-              Filtrar Movimentações
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <span className="text-2xl">🔍</span>
+                Filtrar Movimentações
+              </h3>
+              <button
+                type="button"
+                onClick={limparFiltrosHistorico}
+                className="text-xs md:text-sm font-semibold text-blue-700 hover:text-blue-800 transition-colors"
+              >
+                Limpar filtros
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  🏪 Filtrar por Loja
+                  🏪 Loja
                 </label>
                 <select
                   value={filtroLojaListagem}
@@ -1537,7 +1730,74 @@ export function Movimentacoes() {
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  🎰 Máquina
+                </label>
+                <select
+                  value={filtroMaquinaListagem}
+                  onChange={(e) => setFiltroMaquinaListagem(e.target.value)}
+                  className="input-field"
+                >
+                  <option value="">Todas as máquinas</option>
+                  {maquinas
+                    .filter(
+                      (maquina) =>
+                        !filtroLojaListagem ||
+                        maquina.lojaId === filtroLojaListagem,
+                    )
+                    .map((maquina) => (
+                      <option key={maquina.id} value={maquina.id}>
+                        {maquina.codigo} - {maquina.nome}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  👤 Funcionário
+                </label>
+                <select
+                  value={filtroUsuarioListagem}
+                  onChange={(e) => setFiltroUsuarioListagem(e.target.value)}
+                  className="input-field"
+                >
+                  <option value="">Todos os funcionários</option>
+                  {usuarios.map((funcionario) => (
+                    <option key={funcionario.id} value={funcionario.id}>
+                      {funcionario.nome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  📅 Data início
+                </label>
+                <input
+                  type="date"
+                  className="input-field"
+                  value={filtroDataInicioListagem}
+                  onChange={(e) => setFiltroDataInicioListagem(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  📅 Data fim
+                </label>
+                <input
+                  type="date"
+                  className="input-field"
+                  value={filtroDataFimListagem}
+                  onChange={(e) => setFiltroDataFimListagem(e.target.value)}
+                />
+              </div>
             </div>
+            <p className="text-xs text-gray-500 mt-3">
+              Sem nenhum filtro selecionado, o histórico abaixo mostra apenas
+              as últimas {QUANTIDADE_PADRAO_HISTORICO} movimentações. Use os
+              filtros acima para consultar um período ou máquina específicos.
+            </p>
           </div>
         )}
 
@@ -2094,10 +2354,11 @@ export function Movimentacoes() {
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <span className="text-2xl">📋</span>
                 Histórico de Movimentações
-                {mostrarHistoricoMovimentacoes && filtroLojaListagem && (
+                {mostrarHistoricoMovimentacoes && (
                   <span className="text-sm text-gray-600 font-normal">
-                    ({movimentacoesFiltradas.length} de {movimentacoes.length}{" "}
-                    registros)
+                    {algumFiltroHistoricoAtivo
+                      ? `(${movimentacoesFiltradas.length} de ${movimentacoes.length} registros)`
+                      : `(últimas ${movimentacoesFiltradas.length})`}
                   </span>
                 )}
               </h3>
@@ -2125,13 +2386,13 @@ export function Movimentacoes() {
                 <EmptyState
                   icon="🔄"
                   title={
-                    filtroLojaListagem
+                    algumFiltroHistoricoAtivo
                       ? "Nenhuma movimentação encontrada"
                       : "Nenhuma movimentação registrada"
                   }
                   message={
-                    filtroLojaListagem
-                      ? "Não há movimentações para a loja selecionada."
+                    algumFiltroHistoricoAtivo
+                      ? "Não há movimentações para os filtros selecionados."
                       : "Registre sua primeira movimentação para começar o controle de estoque!"
                   }
                   action={{
@@ -2487,10 +2748,10 @@ export function Movimentacoes() {
         )}
 
         {/* Modal de Edição */}
-        {editandoMovimentacao && usuario?.role === "ADMIN" && (
+        {editandoMovimentacao && formEdicao && usuario?.role === "ADMIN" && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] flex flex-col">
+              <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
                 <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
                   <span className="text-2xl">✏️</span>
                   Editar Movimentação
@@ -2515,53 +2776,298 @@ export function Movimentacoes() {
                 </button>
               </div>
 
-              <div className="space-y-4">
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">
-                    <strong>Data:</strong>{" "}
-                    {new Date(
-                      editandoMovimentacao.dataColeta ||
-                        editandoMovimentacao.createdAt,
-                    ).toLocaleString("pt-BR")}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">
+              <div className="space-y-5 p-6 overflow-y-auto">
+                <div className="p-3 bg-gray-50 rounded-lg text-sm text-gray-600">
+                  <p>
                     <strong>Máquina:</strong>{" "}
-                    {maquinas.find(
-                      (m) => m.id === editandoMovimentacao.maquinaId,
-                    )?.codigo || "N/A"}
+                    {(() => {
+                      const maquina = maquinas.find(
+                        (m) => m.id === editandoMovimentacao.maquinaId,
+                      );
+                      return maquina
+                        ? `${maquina.codigo} - ${maquina.nome}`
+                        : "N/A";
+                    })()}
                   </p>
+                  <p className="mt-1">
+                    <strong>Registrado por:</strong>{" "}
+                    {editandoMovimentacao.usuario?.nome || "Não informado"}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Data/Hora
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Quando essa coleta/abastecimento foi feito
+                    </p>
+                    <input
+                      type="datetime-local"
+                      value={formEdicao.dataColeta}
+                      onChange={(e) =>
+                        atualizarCampoEdicao("dataColeta", e.target.value)
+                      }
+                      className="input-field w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Total Pré
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Quantidade que estava na máquina antes desta coleta
+                    </p>
+                    <input
+                      type="number"
+                      value={formEdicao.totalPre}
+                      onChange={(e) =>
+                        atualizarCampoEdicao("totalPre", e.target.value)
+                      }
+                      className="input-field w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Saíram
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Quantos produtos saíram (venderam) da máquina
+                    </p>
+                    <input
+                      type="number"
+                      value={formEdicao.sairam}
+                      onChange={(e) =>
+                        atualizarCampoEdicao("sairam", e.target.value)
+                      }
+                      className="input-field w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Abastecidas
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Quantos produtos foram colocados na máquina agora
+                    </p>
+                    <input
+                      type="number"
+                      value={formEdicao.abastecidas}
+                      onChange={(e) =>
+                        atualizarCampoEdicao("abastecidas", e.target.value)
+                      }
+                      className="input-field w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Total Atual
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Quantidade após a coleta (Pré − Saíram + Abastecidas).
+                      Calculado automaticamente, mas pode ajustar.
+                    </p>
+                    <input
+                      type="number"
+                      value={formEdicao.totalPos}
+                      onChange={(e) =>
+                        atualizarCampoEdicao("totalPos", e.target.value)
+                      }
+                      className="input-field w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Fichas
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Fichas/prêmios entregues aos clientes nesta coleta
+                    </p>
+                    <input
+                      type="number"
+                      value={formEdicao.fichas}
+                      onChange={(e) =>
+                        atualizarCampoEdicao("fichas", e.target.value)
+                      }
+                      className="input-field w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Contador IN
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Leitura do contador de entrada da máquina
+                    </p>
+                    <input
+                      type="number"
+                      value={formEdicao.contadorIn}
+                      onChange={(e) =>
+                        atualizarCampoEdicao("contadorIn", e.target.value)
+                      }
+                      className="input-field w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Contador OUT
+                    </label>
+                    <p className="text-xs text-gray-500 mb-1">
+                      Leitura do contador de saída da máquina
+                    </p>
+                    <input
+                      type="number"
+                      value={formEdicao.contadorOut}
+                      onChange={(e) =>
+                        atualizarCampoEdicao("contadorOut", e.target.value)
+                      }
+                      className="input-field w-full"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    📦 Quantidade Abastecida
+                  <label className="block text-sm font-semibold text-gray-700">
+                    Observações
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formEdicao.abastecidas}
+                  <p className="text-xs text-gray-500 mb-1">
+                    Anotações livres sobre esta movimentação
+                  </p>
+                  <textarea
+                    value={formEdicao.observacoes}
                     onChange={(e) =>
-                      setFormEdicao({
-                        ...formEdicao,
-                        abastecidas: e.target.value,
-                      })
+                      atualizarCampoEdicao("observacoes", e.target.value)
                     }
-                    className="input-field"
-                    placeholder="0"
+                    rows={2}
+                    className="input-field w-full"
                   />
                 </div>
 
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={cancelarEdicao}
-                    className="flex-1 btn-secondary"
-                  >
-                    Cancelar
-                  </button>
-                  <button onClick={salvarEdicao} className="flex-1 btn-primary">
-                    Salvar Alterações
-                  </button>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-semibold text-gray-700">
+                      Produtos da Movimentação
+                    </label>
+                    <button
+                      type="button"
+                      onClick={adicionarProdutoEdicao}
+                      className="px-2 py-1 rounded-md text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    >
+                      + Produto
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Saiu / Abastecida / Retirada por produto. Quando há apenas
+                    um produto, esses números acompanham automaticamente os
+                    campos Saíram e Abastecidas acima.
+                  </p>
+                  <div className="hidden md:grid md:grid-cols-5 gap-2 mb-1 text-xs font-semibold text-gray-500">
+                    <span className="md:col-span-2">Produto</span>
+                    <span>Saiu</span>
+                    <span>Abastecida</span>
+                    <span>Retirada</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {(formEdicao.produtos || []).map((produto, index) => (
+                      <div
+                        key={`edicao-produto-${index}`}
+                        className="grid grid-cols-1 md:grid-cols-5 gap-2"
+                      >
+                        <select
+                          value={produto.produtoId}
+                          onChange={(e) =>
+                            atualizarProdutoEdicao(
+                              index,
+                              "produtoId",
+                              e.target.value,
+                            )
+                          }
+                          className="input-field md:col-span-2"
+                        >
+                          <option value="">Selecione o produto</option>
+                          {produtos.map((itemProduto) => (
+                            <option key={itemProduto.id} value={itemProduto.id}>
+                              {itemProduto.nome}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          min="0"
+                          value={produto.quantidadeSaiu}
+                          onChange={(e) =>
+                            atualizarProdutoEdicao(
+                              index,
+                              "quantidadeSaiu",
+                              e.target.value,
+                            )
+                          }
+                          className="input-field"
+                          placeholder="Saiu"
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          value={produto.quantidadeAbastecida}
+                          onChange={(e) =>
+                            atualizarProdutoEdicao(
+                              index,
+                              "quantidadeAbastecida",
+                              e.target.value,
+                            )
+                          }
+                          className="input-field"
+                          placeholder="Abastecida"
+                        />
+                        <div className="flex gap-2">
+                          <input
+                            type="number"
+                            min="0"
+                            value={produto.retiradaProduto}
+                            onChange={(e) =>
+                              atualizarProdutoEdicao(
+                                index,
+                                "retiradaProduto",
+                                e.target.value,
+                              )
+                            }
+                            className="input-field"
+                            placeholder="Retirada"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removerProdutoEdicao(index)}
+                            className="px-2 rounded-md bg-red-100 hover:bg-red-200 text-red-700 text-xs font-bold"
+                            title="Remover produto"
+                          >
+                            X
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              </div>
+
+              <div className="flex gap-3 p-6 pt-4 border-t border-gray-100">
+                <button
+                  onClick={cancelarEdicao}
+                  className="flex-1 btn-secondary"
+                  disabled={salvandoEdicaoMovimentacao}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={salvarEdicao}
+                  className="flex-1 btn-primary"
+                  disabled={salvandoEdicaoMovimentacao}
+                >
+                  {salvandoEdicaoMovimentacao
+                    ? "Salvando..."
+                    : "Salvar edição"}
+                </button>
               </div>
             </div>
           </div>
