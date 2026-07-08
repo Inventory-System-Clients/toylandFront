@@ -174,6 +174,42 @@ export function Produtos() {
       },
     },
     {
+      key: "jogadas_7_00",
+      label: "🥇 Lucro 3x R$ 7,00",
+      render: (produto) => {
+        const preco = Number(produto.preco || 0);
+        const jogadas = Math.ceil((preco * 3) / 7);
+        return (
+          <div className="text-center">
+            <span className="font-bold text-orange-600 text-lg">
+              {jogadas}
+            </span>
+            <span className="text-xs text-gray-500 block">
+              {jogadas === 1 ? "jogada" : "jogadas"}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
+      key: "jogadas_10_00",
+      label: "🏆 Lucro 3x R$ 10,00",
+      render: (produto) => {
+        const preco = Number(produto.preco || 0);
+        const jogadas = Math.ceil((preco * 3) / 10);
+        return (
+          <div className="text-center">
+            <span className="font-bold text-purple-600 text-lg">
+              {jogadas}
+            </span>
+            <span className="text-xs text-gray-500 block">
+              {jogadas === 1 ? "jogada" : "jogadas"}
+            </span>
+          </div>
+        );
+      },
+    },
+    {
       key: "estoque",
       label: "Estoque",
       render: (produto) => {

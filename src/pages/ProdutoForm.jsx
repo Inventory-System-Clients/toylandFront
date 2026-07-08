@@ -339,62 +339,73 @@ export function ProdutoForm() {
                     neste produto
                   </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Ficha R$ 2,50 */}
-                    <div className="bg-white p-4 rounded-lg border border-green-300">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-700">
-                          💰 Ficha R$ 2,50
-                        </span>
-                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-bold">
-                          Econômica
-                        </span>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-3xl font-bold text-green-600">
-                          {Math.ceil(parseFloat(formData.preco) / 2.5)}
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {Math.ceil(parseFloat(formData.preco) / 2.5) === 1
-                            ? "jogada mínima"
-                            : "jogadas mínimas"}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-2">
-                          Faturamento: R${" "}
-                          {(
-                            Math.ceil(parseFloat(formData.preco) / 2.5) * 2.5
-                          ).toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Ficha R$ 5,00 */}
-                    <div className="bg-white p-4 rounded-lg border border-green-300">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-semibold text-gray-700">
-                          💎 Ficha R$ 5,00
-                        </span>
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-bold">
-                          Premium
-                        </span>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-3xl font-bold text-blue-600">
-                          {Math.ceil(parseFloat(formData.preco) / 5)}
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {Math.ceil(parseFloat(formData.preco) / 5) === 1
-                            ? "jogada mínima"
-                            : "jogadas mínimas"}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-2">
-                          Faturamento: R${" "}
-                          {(
-                            Math.ceil(parseFloat(formData.preco) / 5) * 5
-                          ).toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      {
+                        valor: 2.5,
+                        emoji: "💰",
+                        tag: "Econômica",
+                        corTag: "bg-green-100 text-green-800",
+                        corValor: "text-green-600",
+                      },
+                      {
+                        valor: 5,
+                        emoji: "💎",
+                        tag: "Premium",
+                        corTag: "bg-blue-100 text-blue-800",
+                        corValor: "text-blue-600",
+                      },
+                      {
+                        valor: 7,
+                        emoji: "🥇",
+                        tag: "Avançada",
+                        corTag: "bg-orange-100 text-orange-800",
+                        corValor: "text-orange-600",
+                      },
+                      {
+                        valor: 10,
+                        emoji: "🏆",
+                        tag: "Master",
+                        corTag: "bg-purple-100 text-purple-800",
+                        corValor: "text-purple-600",
+                      },
+                    ].map((ficha) => {
+                      const jogadas = Math.ceil(
+                        parseFloat(formData.preco) / ficha.valor,
+                      );
+                      return (
+                        <div
+                          key={ficha.valor}
+                          className="bg-white p-4 rounded-lg border border-green-300"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold text-gray-700">
+                              {ficha.emoji} Ficha R${" "}
+                              {ficha.valor.toFixed(2).replace(".", ",")}
+                            </span>
+                            <span
+                              className={`text-xs ${ficha.corTag} px-2 py-1 rounded-full font-bold`}
+                            >
+                              {ficha.tag}
+                            </span>
+                          </div>
+                          <div className="text-center">
+                            <p className={`text-3xl font-bold ${ficha.corValor}`}>
+                              {jogadas}
+                            </p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              {jogadas === 1
+                                ? "jogada mínima"
+                                : "jogadas mínimas"}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-2">
+                              Faturamento: R${" "}
+                              {(jogadas * ficha.valor).toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
@@ -403,7 +414,7 @@ export function ProdutoForm() {
                       <span>
                         <strong>Dica:</strong> Quanto menor o número de jogadas,
                         mais rápido você recupera o investimento. Com ficha de
-                        R$ 5,00, o lucro é mais rápido!
+                        R$ 10,00, o lucro é mais rápido!
                       </span>
                     </p>
                   </div>
