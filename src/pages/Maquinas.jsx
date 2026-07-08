@@ -149,7 +149,6 @@ export function Maquinas() {
       key: "loja",
       label: "Loja",
       render: (maquina) => {
-        console.log("Buscando loja para máquina:", maquina.lojaId, "em", lojas);
         const loja = lojas.find((l) => l.id === maquina.lojaId);
         return loja ? loja.nome : `N/A (ID: ${maquina.lojaId})`;
       },
