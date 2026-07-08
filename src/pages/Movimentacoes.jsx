@@ -3123,6 +3123,14 @@ export function Movimentacoes() {
             <h3 className="text-xl font-bold text-gray-900 mb-4">
               ✏️ Editar Produtos Enviados
             </h3>
+            {editandoEstoqueLoja.grupoId && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-800">
+                🔗 Esta movimentação faz parte de uma transferência/compra
+                vinculada. Alterar a quantidade também atualiza o registro
+                correspondente do outro lado (loja/garagem), mantendo o
+                estoque dos dois sincronizado.
+              </div>
+            )}
             <form onSubmit={salvarEdicaoLoja}>
               <div className="p-3 bg-gray-50 rounded mb-4">
                 <p className="text-xs text-gray-500">
@@ -3166,6 +3174,12 @@ export function Movimentacoes() {
                       />
                       <select
                         value={prod.tipoMovimentacao}
+                        disabled={Boolean(editandoEstoqueLoja.grupoId)}
+                        title={
+                          editandoEstoqueLoja.grupoId
+                            ? "A direção de cada lado é definida na criação da transferência/compra e não pode ser trocada aqui."
+                            : undefined
+                        }
                         onChange={(e) => {
                           const novaLista =
                             editandoEstoqueLoja.produtosEnviados.map((p, i) =>
@@ -3178,7 +3192,7 @@ export function Movimentacoes() {
                             produtosEnviados: novaLista,
                           });
                         }}
-                        className="input-field w-28"
+                        className="input-field w-28 disabled:bg-gray-100 disabled:text-gray-400"
                       >
                         <option value="entrada">Entrada</option>
                         <option value="saida">Saída</option>

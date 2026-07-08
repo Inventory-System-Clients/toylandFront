@@ -16,6 +16,7 @@ const classificarMovimento = (mov) => {
       cor: "bg-emerald-100 text-emerald-800 border-emerald-200",
       icon: "🛒",
       automatico: true,
+      vinculavel: true,
     };
   }
   if (observacao.includes("transferência automática")) {
@@ -28,6 +29,7 @@ const classificarMovimento = (mov) => {
           : "bg-blue-100 text-blue-800 border-blue-200",
       icon: garagem && temSaida ? "🚚" : "📥",
       automatico: true,
+      vinculavel: true,
     };
   }
   if (observacao.includes("transferência da garagem")) {
@@ -40,6 +42,7 @@ const classificarMovimento = (mov) => {
           : "bg-blue-100 text-blue-800 border-blue-200",
       icon: garagem && temSaida ? "🚚" : "📥",
       automatico: true,
+      vinculavel: true,
     };
   }
   if (observacao.includes("abastecimento da máquina")) {
@@ -146,11 +149,10 @@ export default function TabelaMovimentacoesEstoqueDeLoja({
   );
 
   const excluir = async (mov) => {
-    if (
-      !window.confirm(
-        "Excluir esta movimentação também reverterá seu efeito no estoque. Deseja continuar?",
-      )
-    ) {
+    const mensagem = mov.grupoId
+      ? "Esta movimentação faz parte de uma transferência/compra vinculada. Excluí-la também removerá o(s) registro(s) do outro lado (loja/garagem) e reverterá o estoque de todos os lados envolvidos. Deseja continuar?"
+      : "Excluir esta movimentação também reverterá seu efeito no estoque. Deseja continuar?";
+    if (!window.confirm(mensagem)) {
       return;
     }
     try {
@@ -294,7 +296,7 @@ export default function TabelaMovimentacoesEstoqueDeLoja({
                       </p>
                     </td>
                     <td className="px-4 py-4 text-center">
-                      {operacao.automatico ? (
+                      {operacao.automatico && !(operacao.vinculavel && mov.grupoId) ? (
                         <span
                           className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500"
                           title="Registros automáticos são protegidos para manter a rastreabilidade."
@@ -302,21 +304,31 @@ export default function TabelaMovimentacoesEstoqueDeLoja({
                           {operacao.acaoLabel || "🔒 Automático"}
                         </span>
                       ) : (
-                        <div className="flex justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setEditandoEstoqueLoja(mov)}
-                            className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-white hover:bg-amber-500"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => excluir(mov)}
-                            className="rounded-lg bg-red-500 px-3 py-2 text-xs font-bold text-white hover:bg-red-600"
-                          >
-                            Excluir
-                          </button>
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditandoEstoqueLoja(mov)}
+                              className="rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-white hover:bg-amber-500"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => excluir(mov)}
+                              className="rounded-lg bg-red-500 px-3 py-2 text-xs font-bold text-white hover:bg-red-600"
+                            >
+                              Excluir
+                            </button>
+                          </div>
+                          {operacao.vinculavel && mov.grupoId && (
+                            <span
+                              className="text-[10px] font-semibold text-slate-400"
+                              title="Editar ou excluir aqui também atualiza o registro vinculado do outro lado (loja/garagem)."
+                            >
+                              🔗 vinculado
+                            </span>
+                          )}
                         </div>
                       )}
                     </td>
