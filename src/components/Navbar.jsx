@@ -1,10 +1,12 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import ToyLandLogo from "../assets/ToyLandLogoSemFundo.png";
 import { useAuth } from "../contexts/AuthContext";
+import { useAlertas } from "../contexts/AlertasContext";
 import { useState } from "react";
 
 export function Navbar() {
   const { usuario, logout, hasRole } = useAuth();
+  const { totalGeral } = useAlertas();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -255,6 +257,22 @@ export function Navbar() {
                 )}
               </div>
             </div>
+            {usuario?.role === "ADMIN" && (
+              <button
+                onClick={() => navigate("/alertas")}
+                className={`hidden lg:flex relative bg-linear-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 items-center gap-2 ${
+                  totalGeral > 0 ? "animate-pulse" : ""
+                }`}
+              >
+                <span className="text-lg leading-none">🔔</span>
+                Alertas
+                {totalGeral > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center border-2 border-white">
+                    {totalGeral > 99 ? "99+" : totalGeral}
+                  </span>
+                )}
+              </button>
+            )}
             <button
               onClick={handleLogout}
               className="hidden lg:flex bg-linear-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 items-center gap-2"
@@ -477,6 +495,23 @@ export function Navbar() {
                   )}
                 </div>
               </div>
+              {usuario?.role === "ADMIN" && (
+                <Link
+                  to="/alertas"
+                  onClick={closeMenu}
+                  className={`relative mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-yellow-500 to-yellow-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-yellow-600 hover:to-yellow-700 ${
+                    totalGeral > 0 ? "animate-pulse" : ""
+                  }`}
+                >
+                  <span className="text-lg leading-none">🔔</span>
+                  Alertas
+                  {totalGeral > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center border-2 border-white">
+                      {totalGeral > 99 ? "99+" : totalGeral}
+                    </span>
+                  )}
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-red-500 to-red-600 px-5 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-red-600 hover:to-red-700"

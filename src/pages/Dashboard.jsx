@@ -1007,7 +1007,7 @@ export function Dashboard() {
           .then((res) => ({
             lojaId: loja.id,
             lojaNome: loja.nome,
-            alertas: res.data || [],
+            alertas: res.data?.alertas || [],
           }))
           .catch((err) => {
             console.error(
