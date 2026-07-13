@@ -12,6 +12,8 @@ const ehGaragem = (loja) =>
 const somarUnidades = (estoque = []) =>
   estoque.reduce((total, item) => total + Number(item.quantidade || 0), 0);
 
+const itemAtivo = (item) => item.ativo !== false;
+
 function ProdutoResumo({ item }) {
   const abaixoDoMinimo =
     Number(item.estoqueMinimo || 0) > 0 &&
@@ -142,6 +144,8 @@ function DepositoCard({
   onToggle,
   onEdit,
 }) {
+  const estoqueVisivel = loja.estoque.filter(itemAtivo);
+
   return (
     <section
       className={`overflow-hidden rounded-2xl border-2 shadow-sm ${
@@ -176,7 +180,7 @@ function DepositoCard({
                   destaque ? "text-purple-100" : "text-gray-500"
                 }`}
               >
-                {loja.estoque.length} produtos · {loja.totalUnidades} unidades
+                {estoqueVisivel.length} produtos · {loja.totalUnidades} unidades
               </p>
             </div>
           </button>
@@ -229,8 +233,8 @@ function DepositoCard({
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          {loja.estoque.length > 0 ? (
-            loja.estoque.map((item) => (
+          {estoqueVisivel.length > 0 ? (
+            estoqueVisivel.map((item) => (
               <ProdutoResumo key={item.id} item={item} />
             ))
           ) : (
@@ -254,7 +258,7 @@ function DepositoCard({
           }`}
         >
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {loja.estoque.map((item) => (
+            {estoqueVisivel.map((item) => (
               <ProdutoDetalhe key={item.id} item={item} />
             ))}
           </div>
@@ -329,7 +333,7 @@ export function Estoque() {
             return {
               ...loja,
               estoque,
-              totalUnidades: somarUnidades(estoque),
+              totalUnidades: somarUnidades(estoque.filter(itemAtivo)),
             };
           }),
         );
@@ -370,6 +374,7 @@ export function Estoque() {
           emoji: produto.emoji,
           quantidade: Number(existente?.quantidade || 0),
           estoqueMinimo: Number(existente?.estoqueMinimo || 0),
+          ativo: existente?.ativo ?? false,
         };
       }),
     });
@@ -385,6 +390,15 @@ export function Estoque() {
     }));
   };
 
+  const alternarAtivoItem = (produtoId) => {
+    setEstoqueEditando((atual) => ({
+      ...atual,
+      itens: atual.itens.map((item) =>
+        item.produtoId === produtoId ? { ...item, ativo: !item.ativo } : item,
+      ),
+    }));
+  };
+
   const salvarEdicaoEstoque = async () => {
     try {
       setSalvandoEstoque(true);
@@ -394,6 +408,7 @@ export function Estoque() {
           produtoId: item.produtoId,
           quantidade: item.quantidade,
           estoqueMinimo: item.estoqueMinimo,
+          ativo: item.ativo,
         })),
       });
       await carregarDados({ exibirLoading: false });
@@ -427,6 +442,7 @@ export function Estoque() {
         loja.estoque
           .filter(
             (item) =>
+              itemAtivo(item) &&
               Number(item.estoqueMinimo || 0) > 0 &&
               Number(item.quantidade || 0) <
                 Number(item.estoqueMinimo || 0),
@@ -833,55 +849,74 @@ export function Estoque() {
                 {estoqueEditando.itens.map((item) => (
                   <div
                     key={item.produtoId}
-                    className="grid grid-cols-1 items-center gap-4 rounded-xl border-2 border-gray-200 p-4 sm:grid-cols-[1fr_150px_150px]"
+                    className={`rounded-xl border-2 p-4 ${
+                      item.ativo
+                        ? "border-gray-200"
+                        : "border-gray-200 bg-gray-50 opacity-70"
+                    }`}
                   >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="text-3xl">{item.emoji || "📦"}</span>
-                      <div className="min-w-0">
-                        <p className="truncate font-bold text-gray-900">
-                          {item.nome}
-                        </p>
-                        {item.codigo && (
-                          <p className="text-xs text-gray-500">
-                            Código: {item.codigo}
+                    <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-[1fr_150px_150px]">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={item.ativo}
+                          onChange={() => alternarAtivoItem(item.produtoId)}
+                          className="h-5 w-5 shrink-0 cursor-pointer rounded text-primary focus:ring-2 focus:ring-primary"
+                          disabled={salvandoEstoque}
+                        />
+                        <span className="text-3xl">{item.emoji || "📦"}</span>
+                        <div className="min-w-0">
+                          <p className="truncate font-bold text-gray-900">
+                            {item.nome}
                           </p>
-                        )}
+                          {item.codigo && (
+                            <p className="text-xs text-gray-500">
+                              Código: {item.codigo}
+                            </p>
+                          )}
+                        </div>
                       </div>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Quantidade
+                        <input
+                          type="number"
+                          min="0"
+                          value={item.quantidade}
+                          onChange={(event) =>
+                            alterarItemEstoque(
+                              item.produtoId,
+                              "quantidade",
+                              event.target.value,
+                            )
+                          }
+                          className="input-field mt-1"
+                          disabled={salvandoEstoque || !item.ativo}
+                        />
+                      </label>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Estoque mínimo
+                        <input
+                          type="number"
+                          min="0"
+                          value={item.estoqueMinimo}
+                          onChange={(event) =>
+                            alterarItemEstoque(
+                              item.produtoId,
+                              "estoqueMinimo",
+                              event.target.value,
+                            )
+                          }
+                          className="input-field mt-1"
+                          disabled={salvandoEstoque || !item.ativo}
+                        />
+                      </label>
                     </div>
-                    <label className="text-sm font-semibold text-gray-700">
-                      Quantidade
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.quantidade}
-                        onChange={(event) =>
-                          alterarItemEstoque(
-                            item.produtoId,
-                            "quantidade",
-                            event.target.value,
-                          )
-                        }
-                        className="input-field mt-1"
-                        disabled={salvandoEstoque}
-                      />
-                    </label>
-                    <label className="text-sm font-semibold text-gray-700">
-                      Estoque mínimo
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.estoqueMinimo}
-                        onChange={(event) =>
-                          alterarItemEstoque(
-                            item.produtoId,
-                            "estoqueMinimo",
-                            event.target.value,
-                          )
-                        }
-                        className="input-field mt-1"
-                        disabled={salvandoEstoque}
-                      />
-                    </label>
+                    {!item.ativo && (
+                      <p className="mt-3 text-xs text-gray-500">
+                        Este produto não aparecerá no estoque da loja. Marque
+                        a caixa para ativá-lo.
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>
