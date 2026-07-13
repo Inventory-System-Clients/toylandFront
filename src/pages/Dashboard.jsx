@@ -1054,12 +1054,13 @@ export function Dashboard() {
         try {
           const estoqueRes = await api.get(`/estoque-lojas/${loja.id}`);
           const estoque = estoqueRes.data || [];
+          const estoqueAtivo = estoque.filter((item) => item.ativo !== false);
 
           return {
             ...loja,
             estoque: estoque,
-            totalProdutos: estoque.length,
-            totalUnidades: estoque.reduce(
+            totalProdutos: estoqueAtivo.length,
+            totalUnidades: estoqueAtivo.reduce(
               (sum, item) => sum + item.quantidade,
               0,
             ),
@@ -1276,7 +1277,8 @@ export function Dashboard() {
 
   // Função para imprimir relatório individual de uma loja
   const imprimirRelatorioLoja = (loja) => {
-    const itensParaComprar = loja.estoque.filter(
+    const estoqueAtivo = loja.estoque.filter((item) => item.ativo !== false);
+    const itensParaComprar = estoqueAtivo.filter(
       (item) => item.quantidade < item.estoqueMinimo,
     );
 
@@ -1391,7 +1393,7 @@ export function Dashboard() {
               </tr>
             </thead>
             <tbody>
-              ${loja.estoque
+              ${estoqueAtivo
                 .map((item) => {
                   const abaixo = item.quantidade < item.estoqueMinimo;
                   return `
@@ -1467,25 +1469,27 @@ export function Dashboard() {
     const necessidadesPorProduto = {};
 
     lojasComEstoque.forEach((loja) => {
-      loja.estoque.forEach((item) => {
-        const falta = item.estoqueMinimo - item.quantidade;
-        if (falta > 0) {
-          if (!necessidadesPorProduto[item.produtoId]) {
-            necessidadesPorProduto[item.produtoId] = {
-              produto: item.produto,
-              totalNecessario: 0,
-              lojas: [],
-            };
+      loja.estoque
+        .filter((item) => item.ativo !== false)
+        .forEach((item) => {
+          const falta = item.estoqueMinimo - item.quantidade;
+          if (falta > 0) {
+            if (!necessidadesPorProduto[item.produtoId]) {
+              necessidadesPorProduto[item.produtoId] = {
+                produto: item.produto,
+                totalNecessario: 0,
+                lojas: [],
+              };
+            }
+            necessidadesPorProduto[item.produtoId].totalNecessario += falta;
+            necessidadesPorProduto[item.produtoId].lojas.push({
+              loja: loja.nome,
+              atual: item.quantidade,
+              minimo: item.estoqueMinimo,
+              necessario: falta,
+            });
           }
-          necessidadesPorProduto[item.produtoId].totalNecessario += falta;
-          necessidadesPorProduto[item.produtoId].lojas.push({
-            loja: loja.nome,
-            atual: item.quantidade,
-            minimo: item.estoqueMinimo,
-            necessario: falta,
-          });
-        }
-      });
+        });
     });
 
     const produtosNecessarios = Object.values(necessidadesPorProduto);
@@ -3026,9 +3030,11 @@ export function Dashboard() {
                     {/* Conteúdo - expansível */}
                     {lojaEstoqueExpanded[loja.id] && (
                       <div className="p-5 bg-white border-t-2 border-gray-100">
-                        {loja.estoque.length > 0 ? (
+                        {loja.estoque.filter((item) => item.ativo !== false)
+                          .length > 0 ? (
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {loja.estoque
+                              .filter((item) => item.ativo !== false)
                               .sort((a, b) => b.quantidade - a.quantidade)
                               .map((item) => {
                                 const abaixoDoMinimo =
