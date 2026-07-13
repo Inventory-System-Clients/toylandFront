@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import api from "../services/api";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
@@ -75,7 +75,6 @@ const parseNumeroInteiro = (valor, permitirNulo = false) => {
 };
 
 export function Movimentacoes() {
-  const navigate = useNavigate();
   const location = useLocation();
   const [modalRegistrarDinheiro, setModalRegistrarDinheiro] = useState(false);
   const [modalGastoVariavel, setModalGastoVariavel] = useState(false);
@@ -1397,12 +1396,6 @@ export function Movimentacoes() {
             </button>
             {usuario?.role === "ADMIN" && (
               <>
-                <button
-              className="px-6 py-3 bg-rose-600 text-white rounded hover:bg-rose-700 font-bold shadow text-base"
-              onClick={() => navigate("/sangrias")}
-            >
-              Sangria
-            </button>
                 <button
               className="px-6 py-3 bg-blue-700 text-white rounded hover:bg-blue-800 font-bold shadow text-base"
               onClick={() => setModalRegistrarDinheiro(true)}
