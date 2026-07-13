@@ -200,6 +200,23 @@ export function Navbar() {
           </div>
           {/* User Info e Logout */}
           <div className="flex items-center space-x-4">
+            {/* Botão Alertas Mobile (somente ícone) */}
+            {usuario?.role === "ADMIN" && (
+              <button
+                onClick={() => navigate("/alertas")}
+                className={`flex lg:hidden relative p-2 rounded-lg hover:bg-white/10 transition-colors ${
+                  totalGeral > 0 ? "animate-pulse" : ""
+                }`}
+                aria-label="Alertas"
+              >
+                <span className="text-xl leading-none">🔔</span>
+                {totalGeral > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center border-2 border-white">
+                    {totalGeral > 99 ? "99+" : totalGeral}
+                  </span>
+                )}
+              </button>
+            )}
             {/* Botão Hamburger Mobile */}
             <button
               onClick={toggleMenu}
