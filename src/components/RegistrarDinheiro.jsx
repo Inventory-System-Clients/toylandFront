@@ -226,7 +226,7 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
       const conflito = dadosErro.conflito;
       const detalheConflito =
         conflito?.inicio && conflito?.fim
-          ? ` Fechamento existente: ${formatarDataHora(
+          ? ` Registro de dinheiro existente: ${formatarDataHora(
               conflito.inicio,
             )} ate ${formatarDataHora(conflito.fim)}.`
           : "";
@@ -257,7 +257,7 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
     >
       <div className="mb-6">
         <h2 className="text-2xl font-black text-secondary-dark">
-          💰 Fechamento de caixa
+          💰 Registro de dinheiro
         </h2>
         <p className="mt-1 text-sm text-gray-500">
           Registre a contagem semanal ou de qualquer período escolhido.
@@ -272,7 +272,7 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
 
       <div className="space-y-6">
         <section className="rounded-2xl border border-purple-100 bg-purple-50/50 p-4">
-          <h3 className="mb-4 font-black text-gray-900">1. Local do fechamento</h3>
+          <h3 className="mb-4 font-black text-gray-900">1. Local do registro de dinheiro</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <label className="text-sm font-bold text-gray-700">
               Loja *
@@ -316,10 +316,10 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
         </section>
 
         <section className="rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
-          <h3 className="mb-1 font-black text-gray-900">2. Período do fechamento</h3>
+          <h3 className="mb-1 font-black text-gray-900">2. Período do registro de dinheiro</h3>
           <p className="mb-4 text-xs text-gray-500">
-            O início é sugerido um minuto após o último fechamento deste mesmo
-            local. As datas continuam editáveis.
+            O início é sugerido um minuto após o último registro de dinheiro
+            deste mesmo local. As datas continuam editáveis.
           </p>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <label className="text-sm font-bold text-gray-700">
@@ -347,15 +347,15 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
           </div>
           {carregandoPeriodo && (
             <p className="mt-3 text-sm font-semibold text-blue-700">
-              Calculando período pelo último fechamento...
+              Calculando período pelo último registro de dinheiro...
             </p>
           )}
           {!carregandoPeriodo && periodoAutomatico && (
             <div className="mt-3 rounded-xl border border-blue-200 bg-white p-3 text-xs text-blue-800">
               {periodoAutomatico.possuiHistorico ? (
                 <>
-                  ✅ Início automático baseado no fechamento anterior, encerrado
-                  em{" "}
+                  ✅ Início automático baseado no registro de dinheiro anterior,
+                  encerrado em{" "}
                   <strong>
                     {new Date(
                       periodoAutomatico.ultimoFechamento.fim,
@@ -365,8 +365,8 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
                 </>
               ) : (
                 <>
-                  ℹ️ Primeiro fechamento encontrado para este local. Sugerimos os
-                  últimos 7 dias.
+                  ℹ️ Primeiro registro de dinheiro encontrado para este local.
+                  Sugerimos os últimos 7 dias.
                 </>
               )}
             </div>
@@ -448,7 +448,7 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
             onChange={(event) => setObservacoes(event.target.value)}
             className="input-field mt-2"
             rows="3"
-            placeholder="Informações adicionais sobre o fechamento..."
+            placeholder="Informações adicionais sobre o registro de dinheiro..."
           />
         </label>
       </div>
@@ -459,7 +459,7 @@ const RegistrarDinheiro = ({ lojas = [], maquinas = [], onSubmit }) => {
           className="btn-primary min-w-48"
           disabled={enviando || !escopoCompleto || carregandoPeriodo}
         >
-          {enviando ? "Registrando..." : "Confirmar fechamento"}
+          {enviando ? "Registrando..." : "Confirmar registro de dinheiro"}
         </button>
       </div>
     </form>

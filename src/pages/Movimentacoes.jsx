@@ -10,6 +10,7 @@ import {
   AlertBox,
 } from "../components/UIComponents";
 import RegistrarDinheiro from "../components/RegistrarDinheiro";
+import FechamentoMachinePay from "../components/FechamentoMachinePay";
 import { PageLoader, EmptyState } from "../components/Loading";
 import { useAuth } from "../contexts/AuthContext";
 import AvisosMaquinasFaltam from "../components/AvisosMaquinasFaltam";
@@ -77,6 +78,8 @@ const parseNumeroInteiro = (valor, permitirNulo = false) => {
 export function Movimentacoes() {
   const location = useLocation();
   const [modalRegistrarDinheiro, setModalRegistrarDinheiro] = useState(false);
+  const [modalFechamentoMachinePay, setModalFechamentoMachinePay] =
+    useState(false);
   const [modalGastoVariavel, setModalGastoVariavel] = useState(false);
   const [salvandoGastoVariavel, setSalvandoGastoVariavel] = useState(false);
   const [formGastoVariavel, setFormGastoVariavel] = useState({
@@ -1403,6 +1406,12 @@ export function Movimentacoes() {
               Registrar Dinheiro
             </button>
               <button
+                className="px-6 py-3 bg-teal-600 text-white rounded hover:bg-teal-700 font-bold shadow text-base"
+                onClick={() => setModalFechamentoMachinePay(true)}
+              >
+                Fechamento Machine Pay
+              </button>
+              <button
                 className="px-6 py-3 bg-orange-600 text-white rounded hover:bg-orange-700 font-bold shadow text-base"
                 onClick={abrirGastoVariavel}
               >
@@ -1635,8 +1644,6 @@ export function Movimentacoes() {
                     setError("");
                     setSuccess("");
                     const response = await api.post("/registro-dinheiro", data);
-                    const fechamentoMachinePay =
-                      response.data?.fechamentoMachinePay;
                     const dinheiroPeloContador =
                       response.data?.dinheiroPeloContador;
                     const complementoDinheiro = dinheiroPeloContador?.calculado
@@ -1647,21 +1654,9 @@ export function Movimentacoes() {
                           maximumFractionDigits: 2,
                         })}.`
                       : "";
-                    if (fechamentoMachinePay?.executado) {
-                      setSuccess(
-                        fechamentoMachinePay.concluido
-                          ? `Fechamento salvo e concluído na Machine Pay!${complementoDinheiro}`
-                          : `Fechamento salvo no ToyLand, mas a Machine Pay não confirmou o fechamento${
-                              fechamentoMachinePay.erro
-                                ? `: ${fechamentoMachinePay.erro}`
-                                : "."
-                            }${complementoDinheiro}`,
-                      );
-                    } else {
-                      setSuccess(
-                        `Registro de dinheiro salvo com sucesso!${complementoDinheiro}`,
-                      );
-                    }
+                    setSuccess(
+                      `Registro de dinheiro salvo com sucesso!${complementoDinheiro}`,
+                    );
                     setModalRegistrarDinheiro(false);
                   } catch (err) {
                     setError(
@@ -1672,6 +1667,30 @@ export function Movimentacoes() {
                   }
                 }}
               />
+            </div>
+          </div>
+        )}
+        {/* Modal Fechamento Machine Pay */}
+        {modalFechamentoMachinePay && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="relative w-full max-w-2xl rounded-2xl bg-white shadow-lg">
+              <button
+                onClick={() => setModalFechamentoMachinePay(false)}
+                style={{
+                  position: "absolute",
+                  top: 12,
+                  right: 16,
+                  fontSize: 22,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "#888",
+                }}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+              <FechamentoMachinePay lojas={lojas} maquinas={maquinas} />
             </div>
           </div>
         )}
