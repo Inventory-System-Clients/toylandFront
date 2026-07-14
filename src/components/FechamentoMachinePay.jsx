@@ -12,32 +12,29 @@ const formatarMoeda = (valor) =>
     currency: "BRL",
   });
 
-const formatarDataHora = (valor) => {
+const paraDataHoraLocal = (valor) => {
   if (!valor) return "";
   const data = new Date(valor);
   if (Number.isNaN(data.getTime())) return "";
-  return data.toLocaleString("pt-BR");
+  const pad = (numero) => String(numero).padStart(2, "0");
+  return `${data.getFullYear()}-${pad(data.getMonth() + 1)}-${pad(data.getDate())}T${pad(data.getHours())}:${pad(data.getMinutes())}`;
 };
 
-const numeroLocal = (valor) => {
-  if (valor === "" || valor === null || valor === undefined) return 0;
-  const texto = String(valor).trim();
-  const normalizado = texto.includes(",")
-    ? texto.replace(/\./g, "").replace(",", ".")
-    : texto;
-  const numero = Number(normalizado);
-  return Number.isFinite(numero) ? numero : 0;
+const paraIsoComFusoLocal = (valor) => {
+  const data = new Date(valor);
+  return Number.isNaN(data.getTime()) ? "" : data.toISOString();
 };
 
 const FechamentoMachinePay = ({ lojas = [], maquinas = [] }) => {
   const [lojaId, setLojaId] = useState("");
   const [maquinaId, setMaquinaId] = useState("");
-  const [periodo, setPeriodo] = useState(null);
+  const [inicio, setInicio] = useState("");
+  const [fim, setFim] = useState("");
+  const [periodoAutomatico, setPeriodoAutomatico] = useState(null);
   const [carregandoPeriodo, setCarregandoPeriodo] = useState(false);
   const [consultando, setConsultando] = useState(false);
   const [erroConsulta, setErroConsulta] = useState("");
   const [resumo, setResumo] = useState(null);
-  const [valorDinheiro, setValorDinheiro] = useState("");
   const [fechando, setFechando] = useState(false);
   const [erroFechamento, setErroFechamento] = useState("");
   const [mensagemFechamento, setMensagemFechamento] = useState("");
@@ -59,37 +56,66 @@ const FechamentoMachinePay = ({ lojas = [], maquinas = [] }) => {
   const escopoCompleto = Boolean(lojaId) && Boolean(maquinaId);
 
   useEffect(() => {
-    setPeriodo(null);
+    if (!escopoCompleto) {
+      setInicio("");
+      setFim("");
+      setPeriodoAutomatico(null);
+      return;
+    }
+
+    let ativo = true;
+    const carregarPeriodo = async () => {
+      try {
+        setCarregandoPeriodo(true);
+        const response = await api.get("/registro-dinheiro/proximo-periodo", {
+          params: { lojaId, maquinaId, fallbackDias: FALLBACK_DIAS },
+        });
+        if (!ativo) return;
+        setInicio(paraDataHoraLocal(response.data.inicio));
+        setFim(paraDataHoraLocal(response.data.fim));
+        setPeriodoAutomatico(response.data);
+      } catch (error) {
+        if (!ativo) return;
+        console.error("Erro ao obter próximo período:", error);
+        const agora = new Date();
+        setFim(paraDataHoraLocal(agora));
+        setInicio(
+          paraDataHoraLocal(
+            new Date(agora.getTime() - FALLBACK_DIAS * 24 * 60 * 60 * 1000),
+          ),
+        );
+        setPeriodoAutomatico(null);
+      } finally {
+        if (ativo) setCarregandoPeriodo(false);
+      }
+    };
+    carregarPeriodo();
+    return () => {
+      ativo = false;
+    };
+  }, [escopoCompleto, lojaId, maquinaId]);
+
+  useEffect(() => {
     setResumo(null);
     setErroConsulta("");
     setMensagemFechamento("");
     setErroFechamento("");
 
-    if (!escopoCompleto) return;
+    if (!maquinaId || !inicio || !fim) return;
 
     let ativo = true;
-    const carregar = async () => {
+    const timeout = setTimeout(async () => {
       try {
-        setCarregandoPeriodo(true);
-        const periodoResponse = await api.get(
-          "/registro-dinheiro/proximo-periodo",
-          {
-            params: { lojaId, maquinaId, fallbackDias: FALLBACK_DIAS },
-          },
-        );
-        if (!ativo) return;
-        setPeriodo(periodoResponse.data);
-
         setConsultando(true);
-        const mpResponse = await api.get("/registro-dinheiro/machine-pay", {
+        const response = await api.get("/registro-dinheiro/machine-pay", {
           params: {
             maquinaId,
-            inicio: periodoResponse.data.inicio,
-            fim: periodoResponse.data.fim,
+            inicio: paraIsoComFusoLocal(inicio),
+            fim: paraIsoComFusoLocal(fim),
           },
         });
         if (!ativo) return;
-        setResumo(mpResponse.data);
+        setResumo(response.data);
       } catch (error) {
         if (!ativo) return;
         setErroConsulta(
@@ -97,29 +123,30 @@ const FechamentoMachinePay = ({ lojas = [], maquinas = [] }) => {
             "Não foi possível consultar a Machine Pay.",
         );
       } finally {
-        if (ativo) {
-          setCarregandoPeriodo(false);
-          setConsultando(false);
-        }
+        if (ativo) setConsultando(false);
       }
-    };
-    carregar();
+    }, 400);
+
     return () => {
       ativo = false;
+      clearTimeout(timeout);
     };
-  }, [escopoCompleto, lojaId, maquinaId]);
+  }, [maquinaId, inicio, fim]);
 
   const fecharNaMachinePay = async () => {
-    if (!periodo) return;
+    const inicioIso = paraIsoComFusoLocal(inicio);
+    const fimIso = paraIsoComFusoLocal(fim);
+    if (!inicioIso || !fimIso) return;
+
     try {
       setFechando(true);
       setErroFechamento("");
       setMensagemFechamento("");
       const response = await api.post("/registro-dinheiro/fechar-machine-pay", {
         maquinaId,
-        inicio: periodo.inicio,
-        fim: periodo.fim,
-        valor: numeroLocal(valorDinheiro),
+        inicio: inicioIso,
+        fim: fimIso,
+        valor: 0,
       });
       setMensagemFechamento(
         response.data?.concluido
@@ -188,18 +215,44 @@ const FechamentoMachinePay = ({ lojas = [], maquinas = [] }) => {
 
       {escopoCompleto && (
         <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
+          <p className="mb-4 text-xs text-gray-500">
+            O período é sugerido a partir do último fechamento deste mesmo
+            local (ou dos últimos {FALLBACK_DIAS} dias, se não houver
+            histórico). As datas continuam editáveis.
+          </p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <label className="text-sm font-bold text-gray-700">
+              Início *
+              <input
+                type="datetime-local"
+                value={inicio}
+                onChange={(event) => setInicio(event.target.value)}
+                className="input-field mt-2"
+                disabled={carregandoPeriodo}
+              />
+            </label>
+            <label className="text-sm font-bold text-gray-700">
+              Fim *
+              <input
+                type="datetime-local"
+                value={fim}
+                onChange={(event) => setFim(event.target.value)}
+                className="input-field mt-2"
+                disabled={carregandoPeriodo}
+              />
+            </label>
+          </div>
+
           {carregandoPeriodo && (
-            <p className="text-sm font-semibold text-blue-700">
+            <p className="mt-3 text-sm font-semibold text-blue-700">
               Calculando período pelo último fechamento...
             </p>
           )}
-          {!carregandoPeriodo && periodo && (
-            <p className="text-xs text-blue-800">
-              Período considerado:{" "}
-              <strong>{formatarDataHora(periodo.inicio)}</strong> até{" "}
-              <strong>{formatarDataHora(periodo.fim)}</strong>
-              {!periodo.possuiHistorico &&
-                ` (sem fechamento anterior, últimos ${FALLBACK_DIAS} dias)`}
+          {!carregandoPeriodo && periodoAutomatico && (
+            <p className="mt-3 text-xs text-blue-800">
+              {periodoAutomatico.possuiHistorico
+                ? "✅ Início sugerido com base no fechamento anterior."
+                : `ℹ️ Sem fechamento anterior encontrado. Sugerimos os últimos ${FALLBACK_DIAS} dias.`}
             </p>
           )}
 
@@ -238,23 +291,6 @@ const FechamentoMachinePay = ({ lojas = [], maquinas = [] }) => {
 
       {escopoCompleto && resumo && (
         <div className="mt-5 rounded-2xl border border-green-100 bg-green-50/40 p-4">
-          <label className="block text-sm font-bold text-gray-700">
-            Valor em dinheiro contado (opcional)
-            <div className="relative mt-2">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400">
-                R$
-              </span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={valorDinheiro}
-                onChange={(event) => setValorDinheiro(event.target.value)}
-                placeholder="0,00"
-                className="input-field pl-12"
-              />
-            </div>
-          </label>
-
           {erroFechamento && (
             <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-800">
               {erroFechamento}
