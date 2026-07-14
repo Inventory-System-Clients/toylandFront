@@ -450,6 +450,20 @@ export function Relatorios() {
       0,
     );
 
+    const gastoFixoTotalPeriodo = toNumber(
+      dadosRelatorio?.totais?.gastoFixoTotalPeriodo,
+    );
+    const gastoVariavelTotalPeriodo = toNumber(
+      dadosRelatorio?.totais?.gastoVariavelTotalPeriodo,
+    );
+    const gastoTotalPeriodo = Number(
+      (
+        gastoFixoTotalPeriodo +
+        gastoVariavelTotalPeriodo +
+        custoProdutosTotal
+      ).toFixed(2),
+    );
+
     return {
       ...dadosRelatorio,
       maquinas,
@@ -457,6 +471,12 @@ export function Relatorios() {
         ...(dadosRelatorio?.totais || {}),
         custoProdutosTotal,
         gastoProdutosTotalPeriodo: custoProdutosTotal,
+        gastoTotalPeriodo,
+        // Invalida os valores líquidos pré-calculados pelo backend: eles foram
+        // computados antes da correção do custo de produtos acima, então
+        // precisam ser recalculados a partir do gastoTotalPeriodo corrigido
+        // (os fallbacks já existentes fazem essa conta).
+        valorLiquidoConsolidadoLojaMaquinas: undefined,
       },
     };
   };
