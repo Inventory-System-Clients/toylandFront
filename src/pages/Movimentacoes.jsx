@@ -333,6 +333,44 @@ export function Movimentacoes() {
       ? Math.max(0, capacidade - quantidadeAtual)
       : null;
 
+    // Diferença de entrada e média de jogadas por bicho:
+    // diferença = IN atual - IN anterior
+    // média = diferença / preço da jogada / saídas
+    const contadorInAtual = Number(formData.contadorIn);
+    const contadorInAnterior = Number(ultimaMovimentacaoMaquina.contadorIn);
+    const contadorInAnteriorInformado =
+      ultimaMovimentacaoMaquina.contadorIn !== null &&
+      ultimaMovimentacaoMaquina.contadorIn !== undefined;
+    const valorFicha = Number(maquinaSelecionada.valorFicha);
+
+    let diferencaEntrada = null;
+    let mediaJogadasPorBicho = null;
+    if (
+      formData.contadorIn !== "" &&
+      contadorInAnteriorInformado &&
+      Number.isFinite(contadorInAtual) &&
+      Number.isFinite(contadorInAnterior)
+    ) {
+      diferencaEntrada = contadorInAtual - contadorInAnterior;
+
+      if (
+        diferencaEntrada >= 0 &&
+        Number.isFinite(valorFicha) &&
+        valorFicha > 0 &&
+        saidasPeloContador > 0
+      ) {
+        mediaJogadasPorBicho = Number(
+          (diferencaEntrada / valorFicha / saidasPeloContador).toFixed(2),
+        );
+      }
+    }
+
+    const jogadasBoasPorPelucia = Number.isFinite(
+      Number(maquinaSelecionada.jogadasBoasPorPelucia),
+    )
+      ? Number(maquinaSelecionada.jogadasBoasPorPelucia)
+      : null;
+
     return {
       capacidade: Number.isFinite(capacidade) ? capacidade : null,
       contadorOutAnterior,
@@ -340,9 +378,13 @@ export function Movimentacoes() {
       saidasPeloContador,
       quantidadeAtual,
       quantidadeSugerida,
+      diferencaEntrada,
+      mediaJogadasPorBicho,
+      jogadasBoasPorPelucia,
     };
   }, [
     formData.contadorOut,
+    formData.contadorIn,
     maquinaSelecionada,
     ultimaMovimentacaoMaquina,
   ]);
@@ -1138,6 +1180,20 @@ export function Movimentacoes() {
       mensagem += `\n━━━━━━━━━━━━━━━━━━━━\n`;
       mensagem += `->  *Contador IN:* ${formData.contadorIn || "0"}\n`;
       mensagem += `->  *Contador OUT:* ${formData.contadorOut || "0"}\n`;
+
+      if (sugestaoMovimentacao && !sugestaoMovimentacao.erro) {
+        mensagem += `->  *Saídas pelo contador:* ${sugestaoMovimentacao.saidasPeloContador}\n`;
+        if (sugestaoMovimentacao.diferencaEntrada !== null) {
+          mensagem += `->  *Diferença de entrada:* ${sugestaoMovimentacao.diferencaEntrada}\n`;
+        }
+        if (sugestaoMovimentacao.mediaJogadasPorBicho !== null) {
+          mensagem += `->  *Média (jogadas por bicho):* ${sugestaoMovimentacao.mediaJogadasPorBicho}`;
+          mensagem +=
+            sugestaoMovimentacao.jogadasBoasPorPelucia !== null
+              ? ` (esperado: ${sugestaoMovimentacao.jogadasBoasPorPelucia})\n`
+              : `\n`;
+        }
+      }
     }
 
     mensagem += `\n━━━━━━━━━━━━━━━━━━━━\n`;
@@ -2108,6 +2164,39 @@ export function Movimentacoes() {
                         </p>
                       </div>
                     </div>
+
+                    {sugestaoMovimentacao.diferencaEntrada !== null && (
+                      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="rounded-lg bg-white p-3 shadow-sm">
+                          <p className="text-xs font-semibold uppercase text-gray-500">
+                            Diferença de entrada
+                          </p>
+                          <p className="mt-1 text-2xl font-black text-secondary">
+                            {sugestaoMovimentacao.diferencaEntrada}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            IN atual − IN anterior
+                          </p>
+                        </div>
+                        {sugestaoMovimentacao.mediaJogadasPorBicho !== null && (
+                          <div className="rounded-lg bg-white p-3 shadow-sm">
+                            <p className="text-xs font-semibold uppercase text-gray-500">
+                              Média (jogadas por bicho)
+                            </p>
+                            <p className="mt-1 text-2xl font-black text-secondary">
+                              {sugestaoMovimentacao.mediaJogadasPorBicho}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              diferença ÷ preço da jogada ÷ saídas
+                              {sugestaoMovimentacao.jogadasBoasPorPelucia !==
+                              null
+                                ? ` — esperado: ${sugestaoMovimentacao.jogadasBoasPorPelucia}`
+                                : ""}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
