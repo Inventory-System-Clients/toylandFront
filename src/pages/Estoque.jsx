@@ -284,6 +284,12 @@ export function Estoque() {
     observacao: "",
     produtos: [{ produtoId: "", quantidade: "" }],
   });
+  const [modalMovimentacao, setModalMovimentacao] = useState(false);
+  const [salvandoMovimentacao, setSalvandoMovimentacao] = useState(false);
+  const [movimentacaoLojaId, setMovimentacaoLojaId] = useState("");
+  const [produtosMovimentacao, setProdutosMovimentacao] = useState([
+    { produtoId: "", quantidade: "" },
+  ]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -551,6 +557,71 @@ export function Estoque() {
     }
   };
 
+  const abrirMovimentacao = () => {
+    setMovimentacaoLojaId("");
+    setProdutosMovimentacao([{ produtoId: "", quantidade: "" }]);
+    setModalMovimentacao(true);
+    setError("");
+    setSuccess("");
+  };
+
+  const alterarProdutoMovimentacao = (index, campo, valor) => {
+    setProdutosMovimentacao((atual) =>
+      atual.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [campo]: valor } : item,
+      ),
+    );
+  };
+
+  const adicionarProdutoMovimentacao = () => {
+    setProdutosMovimentacao((atual) => [
+      ...atual,
+      { produtoId: "", quantidade: "" },
+    ]);
+  };
+
+  const removerProdutoMovimentacao = (index) => {
+    setProdutosMovimentacao((atual) =>
+      atual.length === 1
+        ? atual
+        : atual.filter((_, itemIndex) => itemIndex !== index),
+    );
+  };
+
+  const salvarMovimentacao = async (event) => {
+    event.preventDefault();
+    const itensValidos = produtosMovimentacao.filter(
+      (item) => item.produtoId && Number(item.quantidade) > 0,
+    );
+    if (!movimentacaoLojaId || itensValidos.length === 0) {
+      setError("Selecione a loja de destino e informe pelo menos um produto.");
+      return;
+    }
+
+    try {
+      setSalvandoMovimentacao(true);
+      setError("");
+      await api.post("/movimentacao-estoque-loja/transferir-da-garagem", {
+        lojaDestinoId: movimentacaoLojaId,
+        produtos: itensValidos.map((item) => ({
+          produtoId: item.produtoId,
+          quantidade: Number(item.quantidade),
+        })),
+      });
+      await carregarDados({ exibirLoading: false });
+      setModalMovimentacao(false);
+      setSuccess("Produtos transferidos da Garagem com sucesso.");
+    } catch (err) {
+      console.error("Erro ao registrar movimentação de estoque:", err);
+      setError(
+        err.response?.data?.error ||
+          "Não foi possível registrar a movimentação.",
+      );
+    } finally {
+      setSalvandoMovimentacao(false);
+    }
+  };
+
   if (loading) return <PageLoader />;
 
   return (
@@ -563,7 +634,18 @@ export function Estoque() {
           icon="📦"
         />
 
-        <div className="mb-6 flex justify-end">
+        <div className="mb-6 flex flex-wrap justify-end gap-3">
+          <button
+            type="button"
+            onClick={abrirMovimentacao}
+            className="inline-flex items-center gap-3 rounded-xl px-6 py-3 font-black text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
+            style={{
+              background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+            }}
+          >
+            <span className="text-xl">🔄</span>
+            Movimentação de Estoque
+          </button>
           <button
             type="button"
             onClick={abrirCompra}
@@ -1141,6 +1223,158 @@ export function Estoque() {
                 disabled={salvandoCompra}
               >
                 {salvandoCompra ? "Registrando..." : "Confirmar compra"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {modalMovimentacao && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <form
+            onSubmit={salvarMovimentacao}
+            className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+          >
+            <div
+              className="flex items-center justify-between gap-4 p-5 text-white"
+              style={{
+                background:
+                  "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+              }}
+            >
+              <div>
+                <h2 className="text-xl font-black">
+                  🔄 Movimentação de estoque
+                </h2>
+                <p className="text-sm text-green-50">
+                  Transfira produtos da Garagem para uma loja.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalMovimentacao(false)}
+                className="rounded-lg p-2 text-2xl hover:bg-white/10"
+                disabled={salvandoMovimentacao}
+                aria-label="Fechar"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-5">
+              <div className="mb-5 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-900">
+                <strong>Origem:</strong> Garagem — todo produto deve passar
+                pelo depósito central antes de seguir para uma loja.
+              </div>
+
+              <label className="text-sm font-semibold text-gray-700">
+                Loja de destino *
+                <select
+                  value={movimentacaoLojaId}
+                  onChange={(event) =>
+                    setMovimentacaoLojaId(event.target.value)
+                  }
+                  className="select-field mt-2"
+                  required
+                >
+                  <option value="">Selecione a loja...</option>
+                  {lojasOperacionais.map((loja) => (
+                    <option key={loja.id} value={loja.id}>
+                      🏪 {loja.nome}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="mt-6">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="font-black text-gray-900">Produtos</h3>
+                  <button
+                    type="button"
+                    onClick={adicionarProdutoMovimentacao}
+                    className="rounded-lg bg-green-600 px-3 py-2 text-sm font-bold text-white"
+                  >
+                    + Adicionar produto
+                  </button>
+                </div>
+
+                <div className="space-y-3">
+                  {produtosMovimentacao.map((item, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-[1fr_110px_auto] items-end gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3"
+                    >
+                      <label className="text-sm font-semibold text-gray-700">
+                        Produto
+                        <select
+                          value={item.produtoId}
+                          onChange={(event) =>
+                            alterarProdutoMovimentacao(
+                              index,
+                              "produtoId",
+                              event.target.value,
+                            )
+                          }
+                          className="select-field mt-1"
+                          required
+                        >
+                          <option value="">Selecione...</option>
+                          {produtos.map((produto) => (
+                            <option key={produto.id} value={produto.id}>
+                              {produto.emoji || "📦"} {produto.nome}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-sm font-semibold text-gray-700">
+                        Quantidade
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantidade}
+                          onChange={(event) =>
+                            alterarProdutoMovimentacao(
+                              index,
+                              "quantidade",
+                              event.target.value,
+                            )
+                          }
+                          className="input-field mt-1"
+                          required
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => removerProdutoMovimentacao(index)}
+                        disabled={produtosMovimentacao.length === 1}
+                        className="mb-1 rounded-lg px-3 py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-30"
+                        title="Remover produto"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t bg-gray-50 p-5 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setModalMovimentacao(false)}
+                className="btn-secondary"
+                disabled={salvandoMovimentacao}
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={salvandoMovimentacao}
+              >
+                {salvandoMovimentacao
+                  ? "Transferindo..."
+                  : "Transferir da Garagem"}
               </button>
             </div>
           </form>

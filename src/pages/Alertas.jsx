@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import { PageHeader } from "../components/UIComponents";
 import { useAlertas } from "../contexts/AlertasContext";
 import AlertAdmin from "../components/AlertAdmin";
+import api from "../services/api";
 
 const TEMA_COR = {
   purple: {
@@ -152,7 +154,8 @@ function ItemEstoqueLoja({ item }) {
   );
 }
 
-function ItemAbastecimentoIncompleto({ item }) {
+function ItemAbastecimentoIncompleto({ item, onExcluir, excluindoId }) {
+  const excluindo = excluindoId === item.id;
   return (
     <div className="bg-white rounded-xl border border-amber-200 p-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -182,14 +185,27 @@ function ItemAbastecimentoIncompleto({ item }) {
           </p>
         )}
       </div>
-      {item.maquinaId && (
-        <Link
-          to={`/maquinas/${item.maquinaId}`}
-          className="text-sm font-semibold text-amber-700 hover:text-amber-900 whitespace-nowrap"
-        >
-          Ver máquina →
-        </Link>
-      )}
+      <div className="flex items-center gap-3">
+        {item.maquinaId && (
+          <Link
+            to={`/maquinas/${item.maquinaId}`}
+            className="text-sm font-semibold text-amber-700 hover:text-amber-900 whitespace-nowrap"
+          >
+            Ver máquina →
+          </Link>
+        )}
+        {onExcluir && (
+          <button
+            type="button"
+            onClick={() => onExcluir(item)}
+            disabled={excluindo}
+            title="Apagar alerta"
+            className="text-sm font-semibold text-red-600 hover:text-red-800 whitespace-nowrap disabled:opacity-50"
+          >
+            {excluindo ? "Apagando..." : "🗑️ Apagar"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -341,6 +357,23 @@ const CHAVE_POR_TIPO = {
 
 export default function Alertas() {
   const { tipos, totalGeral, carregando, recarregar } = useAlertas();
+  const [excluindoId, setExcluindoId] = useState(null);
+
+  const excluirAlertaAbastecimento = async (item) => {
+    if (!item?.id || !item?.maquinaId) return;
+    setExcluindoId(item.id);
+    try {
+      await api.delete(
+        `/relatorios/alertas-abastecimento-incompleto/${item.id}`,
+        { data: { maquinaId: item.maquinaId } },
+      );
+      await recarregar();
+    } catch (error) {
+      console.error("Erro ao apagar alerta:", error);
+    } finally {
+      setExcluindoId(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background-light bg-pattern teddy-pattern">
@@ -423,6 +456,12 @@ export default function Alertas() {
                     <ItemComponent
                       key={obterChave(item, index) || index}
                       item={item}
+                      {...(tipo.id === "abastecimento-incompleto"
+                        ? {
+                            onExcluir: excluirAlertaAbastecimento,
+                            excluindoId,
+                          }
+                        : {})}
                     />
                   ))}
                 </div>
