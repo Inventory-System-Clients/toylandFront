@@ -289,21 +289,45 @@ export function Movimentacoes() {
     [formData.maquina_id, maquinas],
   );
 
-  const ultimaMovimentacaoMaquina = useMemo(
-    () =>
-      movimentacoes
-        .filter(
-          (movimentacao) =>
-            String(movimentacao.maquinaId ?? movimentacao.maquina_id) ===
-            String(formData.maquina_id),
-        )
-        .sort(
-          (a, b) =>
-            new Date(b.dataColeta || b.createdAt) -
-            new Date(a.dataColeta || a.createdAt),
-        )[0] || null,
-    [formData.maquina_id, movimentacoes],
-  );
+  // Busca a última movimentação diretamente no backend filtrando pela máquina.
+  // Importante: `movimentacoes` (estado geral) vem de GET /movimentacoes sem
+  // filtro de máquina, que o backend limita às 50 mais recentes globalmente.
+  // Uma máquina que não teve movimentação entre as últimas 50 do sistema
+  // ficaria de fora dessa lista mesmo tendo histórico, então não dá para
+  // derivar a última movimentação da máquina a partir desse estado.
+  const [ultimaMovimentacaoMaquina, setUltimaMovimentacaoMaquina] =
+    useState(null);
+
+  useEffect(() => {
+    if (!formData.maquina_id) {
+      setUltimaMovimentacaoMaquina(null);
+      return;
+    }
+
+    let cancelado = false;
+
+    const buscarUltimaMovimentacao = async () => {
+      try {
+        const response = await api.get(
+          `/movimentacoes?maquinaId=${formData.maquina_id}&limite=1`,
+        );
+        if (!cancelado) {
+          setUltimaMovimentacaoMaquina(response.data?.[0] || null);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar última movimentação da máquina:", error);
+        if (!cancelado) {
+          setUltimaMovimentacaoMaquina(null);
+        }
+      }
+    };
+
+    buscarUltimaMovimentacao();
+
+    return () => {
+      cancelado = true;
+    };
+  }, [formData.maquina_id]);
 
   const sugestaoMovimentacao = useMemo(() => {
     if (!maquinaSelecionada || !ultimaMovimentacaoMaquina) {
