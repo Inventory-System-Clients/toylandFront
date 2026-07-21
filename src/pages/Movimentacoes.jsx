@@ -64,6 +64,17 @@ const formatarDataHoraParaInput = (valor) => {
   )}T${pad(data.getHours())}:${pad(data.getMinutes())}`;
 };
 
+// O input datetime-local devolve um horário "ingênuo" (sem timezone) que
+// representa o horário local do navegador. Sem isso, o backend interpretava
+// essa string como UTC (dependendo do timezone do servidor), o que fazia o
+// horário salvo ficar 3h adiantado/atrasado em relação ao Brasília.
+const converterDataHoraInputParaISO = (valor) => {
+  if (!valor) return null;
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) return null;
+  return data.toISOString();
+};
+
 const parseNumeroInteiro = (valor, permitirNulo = false) => {
   if (valor === "" || valor === null || valor === undefined) {
     return permitirNulo ? null : 0;
@@ -1083,7 +1094,7 @@ export function Movimentacoes() {
       setSalvandoEdicaoMovimentacao(true);
 
       const payload = {
-        dataColeta: formEdicao.dataColeta || null,
+        dataColeta: converterDataHoraInputParaISO(formEdicao.dataColeta),
         totalPre: parseNumeroInteiro(formEdicao.totalPre),
         sairam: parseNumeroInteiro(formEdicao.sairam),
         abastecidas: parseNumeroInteiro(formEdicao.abastecidas),
