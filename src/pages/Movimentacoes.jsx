@@ -1302,6 +1302,55 @@ export function Movimentacoes() {
     setFiltroUsuarioListagem("");
   };
 
+  // Monta a mesma mensagem de WhatsApp usada ao registrar a coleta, mas a
+  // partir de uma movimentação já salva — útil para quando alguém esquece de
+  // enviar a mensagem na hora e precisa reenviar depois, com os dados reais.
+  const montarMensagemWhatsappHistorico = (mov) => {
+    const maquina = mov.maquina || maquinas.find((m) => m.id === mov.maquinaId);
+    const loja = lojas.find((l) => l.id === maquina?.lojaId);
+    const produtoId = mov.detalhesProdutos?.[0]?.produtoId;
+    const produto = produtos.find((p) => p.id === produtoId);
+    const data = new Date(mov.dataColeta || mov.createdAt);
+
+    let mensagem = ` *Movimentação de Máquina*\n`;
+    mensagem += `━━━━━━━━━━━━━━━━━━━━\n\n`;
+    mensagem += `->  *Loja:* ${loja?.nome || "Não informada"}\n`;
+    mensagem += `->  *Máquina:* ${maquina ? `${maquina.nome} - ${maquina.codigo}` : "Não informada"}\n`;
+    mensagem += `->  *Produto:* ${produto ? `${produto.emoji || ""} ${produto.nome}` : "Não informado"}\n`;
+    mensagem += `->  *Capacidade da máquina:* ${maquina?.capacidadePadrao ?? "Não informada"}\n`;
+
+    mensagem += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+    mensagem += `->  *Contador IN:* ${mov.contadorIn ?? "0"}\n`;
+    mensagem += `->  *Contador OUT:* ${mov.contadorOut ?? "0"}\n`;
+
+    mensagem += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+    mensagem += `->  *Quantidade antes:* ${mov.totalPre ?? 0}\n`;
+    mensagem += `->  *Quantidade adicionada:* ${mov.abastecidas ?? 0}\n`;
+    mensagem += `->  *Saíram:* ${mov.sairam ?? 0}\n`;
+    mensagem += `->  *Total após abastecimento:* ${mov.totalPos ?? 0}\n`;
+    if (mov.fichas) {
+      mensagem += `->  *Fichas:* ${mov.fichas}\n`;
+    }
+
+    if (mov.observacoes?.trim()) {
+      mensagem += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+      mensagem += `->  *Observação:* ${mov.observacoes.trim()}\n`;
+    }
+
+    mensagem += `\n━━━━━━━━━━━━━━━━━━━━\n`;
+    mensagem += `->  *Registrado por:* ${mov.usuario?.nome || "Não informado"}\n`;
+    mensagem += `->  *Data/Hora:* ${data.toLocaleString("pt-BR")}\n`;
+    mensagem += `\n_(mensagem gerada a partir do histórico de movimentações)_`;
+
+    return mensagem;
+  };
+
+  const enviarMovimentacaoSalvaParaWhatsapp = (mov) => {
+    const mensagem = montarMensagemWhatsappHistorico(mov);
+    const url = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   const columns = [
     {
       key: "data",
@@ -1414,33 +1463,50 @@ export function Movimentacoes() {
     },
   ];
 
-  if (usuario?.role === "ADMIN") {
-    columns.push({
-      key: "acoes",
-      label: "Ações",
-      render: (mov) => (
+  columns.push({
+    key: "acoes",
+    label: "Ações",
+    render: (mov) => (
+      <div className="flex flex-wrap items-center gap-2">
+        {usuario?.role === "ADMIN" && (
+          <button
+            onClick={() => iniciarEdicao(mov)}
+            className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
+            </svg>
+            Editar
+          </button>
+        )}
         <button
-          onClick={() => iniciarEdicao(mov)}
-          className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
+          onClick={() => enviarMovimentacaoSalvaParaWhatsapp(mov)}
+          className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
+          title="Montar e enviar no WhatsApp os dados desta movimentação"
         >
           <svg
             className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
+            fill="currentColor"
             viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-            />
+            <path d="M17.472 14.382c-.297-.149-1.758-.868-2.03-.967-.273-.099-.472-.148-.67.15-.198.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+            <path d="M12.004 2.003c-5.514 0-9.997 4.483-9.997 9.997 0 1.762.463 3.484 1.343 4.997L2 22l5.126-1.341a9.965 9.965 0 004.878 1.243h.004c5.514 0 9.997-4.483 9.997-9.997 0-2.669-1.04-5.178-2.928-7.065a9.935 9.935 0 00-7.073-2.837zm0 18.166h-.003a8.16 8.16 0 01-4.157-1.14l-.298-.177-3.043.797.812-2.968-.194-.305a8.14 8.14 0 01-1.253-4.376c0-4.508 3.67-8.177 8.184-8.177 2.186 0 4.24.852 5.786 2.399a8.121 8.121 0 012.396 5.785c0 4.508-3.67 8.178-8.184 8.178z" />
           </svg>
-          Editar
+          WhatsApp
         </button>
-      ),
-    });
-  }
+      </div>
+    ),
+  });
 
   if (loading) return <PageLoader />;
 
