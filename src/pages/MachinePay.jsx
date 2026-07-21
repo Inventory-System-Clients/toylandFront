@@ -73,6 +73,8 @@ export function MachinePay() {
   const hoje = new Date().toISOString().slice(0, 10);
   const [periodoInicio, setPeriodoInicio] = useState(hoje);
   const [periodoFim, setPeriodoFim] = useState(hoje);
+  const [horarioInicio, setHorarioInicio] = useState("00:00");
+  const [horarioFim, setHorarioFim] = useState("23:59");
 
   const [maquinas, setMaquinas] = useState([]);
   const [statuses, setStatuses] = useState({});
@@ -181,7 +183,7 @@ export function MachinePay() {
       setBuscandoTransacoesId(maquina.id);
       setError("");
       const params = admin
-        ? `?inicio=${periodoInicio}T00:00&fim=${periodoFim}T23:59`
+        ? `?inicio=${periodoInicio}T${horarioInicio}&fim=${periodoFim}T${horarioFim}`
         : "";
       const response = await api.get(
         `/machine-pay/maquinas/${maquina.id}/transacoes-24h${params}`,
@@ -395,6 +397,12 @@ export function MachinePay() {
                                 onChange={(e) => setPeriodoInicio(e.target.value)}
                                 className="border border-gray-300 rounded px-2 py-1 text-sm"
                               />
+                              <input
+                                type="time"
+                                value={horarioInicio}
+                                onChange={(e) => setHorarioInicio(e.target.value)}
+                                className="border border-gray-300 rounded px-2 py-1 text-sm"
+                              />
                             </div>
                             <div className="flex gap-1 items-center">
                               <label className="text-xs font-semibold text-gray-600">Ate</label>
@@ -402,6 +410,12 @@ export function MachinePay() {
                                 type="date"
                                 value={periodoFim}
                                 onChange={(e) => setPeriodoFim(e.target.value)}
+                                className="border border-gray-300 rounded px-2 py-1 text-sm"
+                              />
+                              <input
+                                type="time"
+                                value={horarioFim}
+                                onChange={(e) => setHorarioFim(e.target.value)}
                                 className="border border-gray-300 rounded px-2 py-1 text-sm"
                               />
                             </div>
