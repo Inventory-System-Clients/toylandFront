@@ -163,6 +163,9 @@ export function Movimentacoes() {
   const [filtroDataInicioListagem, setFiltroDataInicioListagem] = useState("");
   const [filtroDataFimListagem, setFiltroDataFimListagem] = useState("");
   const [filtroUsuarioListagem, setFiltroUsuarioListagem] = useState("");
+  const [movimentacoesFiltradas, setMovimentacoesFiltradas] = useState([]);
+  const [carregandoHistoricoFiltrado, setCarregandoHistoricoFiltrado] =
+    useState(false);
 
   const QUANTIDADE_PADRAO_HISTORICO = 8;
 
@@ -1331,33 +1334,55 @@ export function Movimentacoes() {
       filtroUsuarioListagem,
   );
 
-  const movimentacoesFiltradasPorCriterios = movimentacoes.filter((mov) => {
-    if (filtroLojaListagem) {
-      const maquina = maquinas.find((m) => m.id === mov.maquinaId);
-      if (maquina?.lojaId !== filtroLojaListagem) return false;
+  // Importante: quando nenhum filtro está ativo, usamos o estado `movimentacoes`
+  // (GET /movimentacoes sem filtro, limitado às 50 mais recentes do sistema).
+  // Quando algum filtro está ativo, NÃO dá para filtrar esse mesmo array em
+  // memória: uma loja/máquina com pouca atividade relativa ao restante do
+  // sistema pode não ter nenhum registro dentro dessas últimas 50 globais,
+  // mesmo tendo histórico próprio. Por isso, com filtro ativo, buscamos
+  // direto no backend passando lojaId/maquinaId/usuarioId/datas.
+  const carregarHistoricoFiltrado = useCallback(async () => {
+    if (!algumFiltroHistoricoAtivo) {
+      setMovimentacoesFiltradas(
+        movimentacoes.slice(0, QUANTIDADE_PADRAO_HISTORICO),
+      );
+      return;
     }
-    if (filtroMaquinaListagem && mov.maquinaId !== filtroMaquinaListagem) {
-      return false;
-    }
-    if (filtroUsuarioListagem && mov.usuarioId !== filtroUsuarioListagem) {
-      return false;
-    }
-    const dataMov = new Date(mov.dataColeta || mov.createdAt);
-    if (filtroDataInicioListagem) {
-      const inicio = new Date(`${filtroDataInicioListagem}T00:00:00`);
-      if (dataMov < inicio) return false;
-    }
-    if (filtroDataFimListagem) {
-      const fim = new Date(`${filtroDataFimListagem}T23:59:59`);
-      if (dataMov > fim) return false;
-    }
-    return true;
-  });
 
-  // Sem nenhum filtro selecionado, mostra apenas os últimos registros
-  const movimentacoesFiltradas = algumFiltroHistoricoAtivo
-    ? movimentacoesFiltradasPorCriterios
-    : movimentacoesFiltradasPorCriterios.slice(0, QUANTIDADE_PADRAO_HISTORICO);
+    try {
+      setCarregandoHistoricoFiltrado(true);
+      const params = { limite: 500 };
+      if (filtroLojaListagem) params.lojaId = filtroLojaListagem;
+      if (filtroMaquinaListagem) params.maquinaId = filtroMaquinaListagem;
+      if (filtroUsuarioListagem) params.usuarioId = filtroUsuarioListagem;
+      if (filtroDataInicioListagem) {
+        params.dataInicio = `${filtroDataInicioListagem}T00:00:00`;
+      }
+      if (filtroDataFimListagem) {
+        params.dataFim = `${filtroDataFimListagem}T23:59:59`;
+      }
+
+      const res = await api.get("/movimentacoes", { params });
+      setMovimentacoesFiltradas(res.data || []);
+    } catch (err) {
+      console.error("Erro ao buscar histórico de movimentações filtrado:", err);
+      setMovimentacoesFiltradas([]);
+    } finally {
+      setCarregandoHistoricoFiltrado(false);
+    }
+  }, [
+    algumFiltroHistoricoAtivo,
+    filtroLojaListagem,
+    filtroMaquinaListagem,
+    filtroUsuarioListagem,
+    filtroDataInicioListagem,
+    filtroDataFimListagem,
+    movimentacoes,
+  ]);
+
+  useEffect(() => {
+    carregarHistoricoFiltrado();
+  }, [carregarHistoricoFiltrado]);
 
   const limparFiltrosHistorico = () => {
     setFiltroLojaListagem("");
@@ -2596,9 +2621,11 @@ export function Movimentacoes() {
                 Histórico de Movimentações
                 {mostrarHistoricoMovimentacoes && (
                   <span className="text-sm text-gray-600 font-normal">
-                    {algumFiltroHistoricoAtivo
-                      ? `(${movimentacoesFiltradas.length} de ${movimentacoes.length} registros)`
-                      : `(últimas ${movimentacoesFiltradas.length})`}
+                    {carregandoHistoricoFiltrado
+                      ? "(carregando...)"
+                      : algumFiltroHistoricoAtivo
+                        ? `(${movimentacoesFiltradas.length} registro${movimentacoesFiltradas.length === 1 ? "" : "s"} encontrado${movimentacoesFiltradas.length === 1 ? "" : "s"})`
+                        : `(últimas ${movimentacoesFiltradas.length})`}
                   </span>
                 )}
               </h3>
@@ -2620,7 +2647,11 @@ export function Movimentacoes() {
             </div>
 
             {mostrarHistoricoMovimentacoes &&
-              (movimentacoesFiltradas.length > 0 ? (
+              (carregandoHistoricoFiltrado ? (
+                <div className="py-10 text-center text-sm text-gray-500">
+                  Carregando movimentações...
+                </div>
+              ) : movimentacoesFiltradas.length > 0 ? (
                 <DataTable headers={columns} data={movimentacoesFiltradas} />
               ) : (
                 <EmptyState
