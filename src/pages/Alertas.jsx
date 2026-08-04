@@ -246,8 +246,9 @@ function ItemPeluciaGigante({ item }) {
   );
 }
 
-function ItemDesempenho({ item }) {
+function ItemDesempenho({ item, onExcluir, excluindoId }) {
   const acimaDaMeta = item.direcao === "acima";
+  const excluindo = excluindoId === item.id;
   return (
     <div className="bg-white rounded-xl border border-rose-200 p-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -272,14 +273,27 @@ function ItemDesempenho({ item }) {
           </p>
         )}
       </div>
-      {item.maquinaId && (
-        <Link
-          to={`/maquinas/${item.maquinaId}`}
-          className="text-sm font-semibold text-rose-700 hover:text-rose-900 whitespace-nowrap"
-        >
-          Ver máquina →
-        </Link>
-      )}
+      <div className="flex items-center gap-3">
+        {item.maquinaId && (
+          <Link
+            to={`/maquinas/${item.maquinaId}`}
+            className="text-sm font-semibold text-rose-700 hover:text-rose-900 whitespace-nowrap"
+          >
+            Ver máquina →
+          </Link>
+        )}
+        {onExcluir && (
+          <button
+            type="button"
+            onClick={() => onExcluir(item)}
+            disabled={excluindo}
+            title="Apagar alerta (volta a aparecer só se acontecer de novo no próximo abastecimento)"
+            className="text-sm font-semibold text-red-600 hover:text-red-800 whitespace-nowrap disabled:opacity-50"
+          >
+            {excluindo ? "Apagando..." : "🗑️ Apagar"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -375,6 +389,21 @@ export default function Alertas() {
     }
   };
 
+  const excluirAlertaDesempenho = async (item) => {
+    if (!item?.id || !item?.maquinaId) return;
+    setExcluindoId(item.id);
+    try {
+      await api.delete(`/relatorios/alertas-bom-desempenho/${item.id}`, {
+        data: { maquinaId: item.maquinaId },
+      });
+      await recarregar();
+    } catch (error) {
+      console.error("Erro ao apagar alerta:", error);
+    } finally {
+      setExcluindoId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background-light bg-pattern teddy-pattern">
       <Navbar />
@@ -459,6 +488,12 @@ export default function Alertas() {
                       {...(tipo.id === "abastecimento-incompleto"
                         ? {
                             onExcluir: excluirAlertaAbastecimento,
+                            excluindoId,
+                          }
+                        : {})}
+                      {...(tipo.id === "desempenho"
+                        ? {
+                            onExcluir: excluirAlertaDesempenho,
                             excluindoId,
                           }
                         : {})}
