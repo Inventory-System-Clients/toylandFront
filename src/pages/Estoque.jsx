@@ -274,6 +274,7 @@ export function Estoque() {
   const [produtos, setProdutos] = useState([]);
   const [fornecedores, setFornecedores] = useState([]);
   const [expandidos, setExpandidos] = useState({});
+  const [expandidosMaquinas, setExpandidosMaquinas] = useState({});
   const [estoqueEditando, setEstoqueEditando] = useState(null);
   const [salvandoEstoque, setSalvandoEstoque] = useState(false);
   const [modalCompra, setModalCompra] = useState(false);
@@ -899,25 +900,39 @@ export function Estoque() {
                 />
 
                 <div className="mt-5">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <h3 className="font-black text-gray-900">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandidosMaquinas((atual) => ({
+                        ...atual,
+                        [loja.id]: !atual[loja.id],
+                      }))
+                    }
+                    className="mb-3 flex w-full items-center justify-between gap-3"
+                    aria-expanded={Boolean(expandidosMaquinas[loja.id])}
+                  >
+                    <h3 className="flex items-center gap-2 font-black text-gray-900">
                       🎮 Máquinas da loja
+                      <span className="text-sm text-gray-500">
+                        {expandidosMaquinas[loja.id] ? "▲" : "▼"}
+                      </span>
                     </h3>
                     <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold text-secondary">
                       {totalNasMaquinas} unidades
                     </span>
-                  </div>
-                  {maquinasDaLoja.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {maquinasDaLoja.map((maquina) => (
-                        <MaquinaCard key={maquina.id} maquina={maquina} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-500">
-                      Nenhuma máquina ativa nesta loja.
-                    </p>
-                  )}
+                  </button>
+                  {expandidosMaquinas[loja.id] &&
+                    (maquinasDaLoja.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {maquinasDaLoja.map((maquina) => (
+                          <MaquinaCard key={maquina.id} maquina={maquina} />
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="rounded-xl bg-gray-50 p-4 text-sm text-gray-500">
+                        Nenhuma máquina ativa nesta loja.
+                      </p>
+                    ))}
                 </div>
               </article>
             );
