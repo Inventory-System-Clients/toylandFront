@@ -152,6 +152,62 @@ export function MachinePay() {
 
   const fecharDetalheMaquina = () => setMaquinaSelecionadaId("");
 
+  const alternarSelecaoMaquina = (maquinaId) => {
+    setMaquinaSelecionadaId((atual) => (atual === maquinaId ? "" : maquinaId));
+  };
+
+  const renderCartaoMaquina = (maquina) => {
+    const status = statuses[maquina.id];
+    const statusTexto = status?.status || "nao consultado";
+
+    return (
+      <button
+        type="button"
+        key={maquina.id}
+        onClick={() => alternarSelecaoMaquina(maquina.id)}
+        className={`w-full rounded-lg border-2 bg-white p-4 text-left transition ${
+          maquinaSelecionadaId === maquina.id
+            ? "border-primary shadow-md"
+            : "border-gray-200 hover:border-primary/40"
+        }`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="font-bold text-gray-900">
+              {maquina.nome || maquina.codigo}
+            </h3>
+            <p className="text-sm text-gray-500">
+              {maquina.loja?.nome || "Loja nao informada"}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              POS {maquina.machinePayPosId}
+            </p>
+          </div>
+          <span
+            className={`rounded-full border px-3 py-1 text-xs font-bold ${obterStatusClasses(
+              statusTexto,
+            )}`}
+          >
+            {statusTexto}
+          </span>
+        </div>
+        {status?.consultadoEm && (
+          <p className="text-xs text-gray-400 mt-3">
+            Consultado em {formatarDataHora(status.consultadoEm)}
+          </p>
+        )}
+        {status?.ultimaTransacaoEm && (
+          <p className="text-xs text-amber-600 mt-1 font-medium">
+            Ultima tx: {status.ultimaTransacaoEm}
+          </p>
+        )}
+        {status && !status.ultimaTransacaoEm && status.status !== "nao consultado" && (
+          <p className="text-xs text-gray-400 mt-1">Sem transacoes recentes</p>
+        )}
+      </button>
+    );
+  };
+
   const carregarMaquinas = async () => {
     try {
       setLoading(true);
@@ -429,79 +485,27 @@ export function MachinePay() {
                   {filtroMaquina ? ` para "${filtroMaquina}"` : ""}.
                 </p>
               </div>
+            ) : !maquinaSelecionadaId ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {maquinasDaLojaFiltradas.map((maquina) =>
+                  renderCartaoMaquina(maquina),
+                )}
+              </div>
             ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <section
-              className={`lg:col-span-1 space-y-3 ${
-                maquinaSelecionadaId ? "hidden lg:block" : "block"
-              }`}
-            >
-              {maquinasDaLojaFiltradas.map((maquina) => {
-                const status = statuses[maquina.id];
-                const statusTexto = status?.status || "nao consultado";
-
-                return (
-                  <button
-                    type="button"
-                    key={maquina.id}
-                    onClick={() => setMaquinaSelecionadaId(maquina.id)}
-                    className={`w-full rounded-lg border-2 bg-white p-4 text-left transition ${
-                      maquinaSelecionadaId === maquina.id
-                        ? "border-primary shadow-md"
-                        : "border-gray-200 hover:border-primary/40"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-bold text-gray-900">
-                          {maquina.nome || maquina.codigo}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          {maquina.loja?.nome || "Loja nao informada"}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          POS {maquina.machinePayPosId}
-                        </p>
-                      </div>
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs font-bold ${obterStatusClasses(
-                          statusTexto,
-                        )}`}
-                      >
-                        {statusTexto}
-                      </span>
-                    </div>
-                    {status?.consultadoEm && (
-                      <p className="text-xs text-gray-400 mt-3">
-                        Consultado em {formatarDataHora(status.consultadoEm)}
-                      </p>
-                    )}
-                    {status?.ultimaTransacaoEm && (
-                      <p className="text-xs text-amber-600 mt-1 font-medium">
-                        Ultima tx: {status.ultimaTransacaoEm}
-                      </p>
-                    )}
-                    {status && !status.ultimaTransacaoEm && status.status !== "nao consultado" && (
-                      <p className="text-xs text-gray-400 mt-1">
-                        Sem transacoes recentes
-                      </p>
-                    )}
-                  </button>
-                );
-              })}
+            <section className="lg:col-span-1 space-y-3">
+              {maquinasDaLojaFiltradas.map((maquina) =>
+                renderCartaoMaquina(maquina),
+              )}
             </section>
 
-            <section
-              className={`lg:col-span-2 ${
-                maquinaSelecionadaId ? "block" : "hidden lg:block"
-              }`}
-            >
-              {maquinaSelecionada ? (
+            <section className="lg:col-span-2">
+              {maquinaSelecionada && (
                 <div className="card-gradient">
                   <button
                     type="button"
                     onClick={fecharDetalheMaquina}
-                    className="mb-4 flex items-center gap-1 text-sm font-semibold text-gray-600 hover:text-gray-900 lg:hidden"
+                    className="mb-4 flex items-center gap-1 text-sm font-semibold text-gray-600 hover:text-gray-900"
                   >
                     ← Voltar para a lista
                   </button>
@@ -728,10 +732,6 @@ export function MachinePay() {
                       Clique em buscar transacoes para consultar a Machine Pay.
                     </div>
                   )}
-                </div>
-              ) : (
-                <div className="hidden card items-center justify-center py-16 text-center text-gray-400 lg:flex">
-                  Selecione uma maquina para ver os detalhes.
                 </div>
               )}
             </section>
