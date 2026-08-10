@@ -79,6 +79,9 @@ export function MachinePay() {
   const [maquinas, setMaquinas] = useState([]);
   const [statuses, setStatuses] = useState({});
   const [transacoesPorMaquina, setTransacoesPorMaquina] = useState({});
+  const [lojaSelecionadaId, setLojaSelecionadaId] = useState(null);
+  const [filtroLoja, setFiltroLoja] = useState("");
+  const [filtroMaquina, setFiltroMaquina] = useState("");
   const [maquinaSelecionadaId, setMaquinaSelecionadaId] = useState("");
   const [modalCreditoMaquina, setModalCreditoMaquina] = useState(null);
   const [valorCredito, setValorCredito] = useState("2,00");
@@ -95,6 +98,60 @@ export function MachinePay() {
     [maquinaSelecionadaId, maquinas],
   );
 
+  const lojasAgrupadas = useMemo(() => {
+    const mapa = new Map();
+    maquinas.forEach((maquina) => {
+      const lojaId = maquina.loja?.id || "sem-loja";
+      const lojaNome = maquina.loja?.nome || "Sem loja";
+      if (!mapa.has(lojaId)) {
+        mapa.set(lojaId, { id: lojaId, nome: lojaNome, maquinas: [] });
+      }
+      mapa.get(lojaId).maquinas.push(maquina);
+    });
+    return Array.from(mapa.values()).sort((a, b) =>
+      a.nome.localeCompare(b.nome, "pt-BR"),
+    );
+  }, [maquinas]);
+
+  const lojasFiltradas = useMemo(() => {
+    const termo = filtroLoja.trim().toLowerCase();
+    if (!termo) return lojasAgrupadas;
+    return lojasAgrupadas.filter((loja) =>
+      loja.nome.toLowerCase().includes(termo),
+    );
+  }, [lojasAgrupadas, filtroLoja]);
+
+  const lojaSelecionada = useMemo(
+    () => lojasAgrupadas.find((loja) => loja.id === lojaSelecionadaId) || null,
+    [lojasAgrupadas, lojaSelecionadaId],
+  );
+
+  const maquinasDaLojaFiltradas = useMemo(() => {
+    const maquinasDaLoja = lojaSelecionada?.maquinas || [];
+    const termo = filtroMaquina.trim().toLowerCase();
+    if (!termo) return maquinasDaLoja;
+    return maquinasDaLoja.filter((maquina) => {
+      const alvo = `${maquina.nome || ""} ${maquina.codigo || ""} ${
+        maquina.machinePayPosId || ""
+      }`.toLowerCase();
+      return alvo.includes(termo);
+    });
+  }, [lojaSelecionada, filtroMaquina]);
+
+  const abrirLoja = (lojaId) => {
+    setLojaSelecionadaId(lojaId);
+    setMaquinaSelecionadaId("");
+    setFiltroMaquina("");
+  };
+
+  const voltarParaLojas = () => {
+    setLojaSelecionadaId(null);
+    setMaquinaSelecionadaId("");
+    setFiltroMaquina("");
+  };
+
+  const fecharDetalheMaquina = () => setMaquinaSelecionadaId("");
+
   const carregarMaquinas = async () => {
     try {
       setLoading(true);
@@ -102,7 +159,6 @@ export function MachinePay() {
       const response = await api.get("/machine-pay/maquinas");
       const lista = response.data || [];
       setMaquinas(lista);
-      setMaquinaSelecionadaId((atual) => atual || lista[0]?.id || "");
     } catch (err) {
       setError(
         err.response?.data?.error ||
@@ -271,8 +327,10 @@ export function MachinePay() {
                 Maquinas com ID Machine Pay
               </h2>
               <p className="text-sm text-gray-600 mt-1">
-                {maquinas.length} maquina(s) cadastrada(s). O status so atualiza
-                quando voce clicar em buscar.
+                {lojaSelecionada
+                  ? `${maquinasDaLojaFiltradas.length} de ${lojaSelecionada.maquinas.length} maquina(s) em ${lojaSelecionada.nome}`
+                  : `${maquinas.length} maquina(s) em ${lojasAgrupadas.length} loja(s)`}
+                . O status so atualiza quando voce clicar em buscar.
               </p>
             </div>
             <button
@@ -296,10 +354,89 @@ export function MachinePay() {
               Cadastre o ID da Machine Pay no formulario da maquina.
             </p>
           </div>
+        ) : !lojaSelecionada ? (
+          <div>
+            <div className="mb-4">
+              <input
+                type="text"
+                value={filtroLoja}
+                onChange={(e) => setFiltroLoja(e.target.value)}
+                placeholder="🔍 Buscar loja..."
+                className="input-field"
+              />
+            </div>
+
+            {lojasFiltradas.length === 0 ? (
+              <div className="card text-center py-12">
+                <p className="text-gray-600">
+                  Nenhuma loja encontrada para "{filtroLoja}".
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {lojasFiltradas.map((loja) => (
+                  <button
+                    type="button"
+                    key={loja.id}
+                    onClick={() => abrirLoja(loja.id)}
+                    className="w-full rounded-lg border-2 border-gray-200 bg-white p-5 text-left transition hover:border-primary/50 hover:shadow-md"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-bold text-gray-900 text-lg">
+                          {loja.nome}
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {loja.maquinas.length} maquina(s) com Machine Pay
+                        </p>
+                      </div>
+                      <span className="text-2xl text-gray-300">›</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
+          <div>
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                onClick={voltarParaLojas}
+                className="flex items-center gap-1 font-semibold text-gray-600 hover:text-gray-900"
+              >
+                ← Voltar para lojas
+              </button>
+              <h2 className="text-xl font-black text-gray-900">
+                {lojaSelecionada.nome}
+              </h2>
+            </div>
+
+            <div className="mb-4">
+              <input
+                type="text"
+                value={filtroMaquina}
+                onChange={(e) => setFiltroMaquina(e.target.value)}
+                placeholder="🔍 Buscar maquina por nome, codigo ou POS..."
+                className="input-field"
+              />
+            </div>
+
+            {maquinasDaLojaFiltradas.length === 0 ? (
+              <div className="card text-center py-12">
+                <p className="text-gray-600">
+                  Nenhuma maquina encontrada nesta loja
+                  {filtroMaquina ? ` para "${filtroMaquina}"` : ""}.
+                </p>
+              </div>
+            ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <section className="lg:col-span-1 space-y-3">
-              {maquinas.map((maquina) => {
+            <section
+              className={`lg:col-span-1 space-y-3 ${
+                maquinaSelecionadaId ? "hidden lg:block" : "block"
+              }`}
+            >
+              {maquinasDaLojaFiltradas.map((maquina) => {
                 const status = statuses[maquina.id];
                 const statusTexto = status?.status || "nao consultado";
 
@@ -354,9 +491,20 @@ export function MachinePay() {
               })}
             </section>
 
-            <section className="lg:col-span-2">
-              {maquinaSelecionada && (
+            <section
+              className={`lg:col-span-2 ${
+                maquinaSelecionadaId ? "block" : "hidden lg:block"
+              }`}
+            >
+              {maquinaSelecionada ? (
                 <div className="card-gradient">
+                  <button
+                    type="button"
+                    onClick={fecharDetalheMaquina}
+                    className="mb-4 flex items-center gap-1 text-sm font-semibold text-gray-600 hover:text-gray-900 lg:hidden"
+                  >
+                    ← Voltar para a lista
+                  </button>
                   <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                     <div>
                       <h2 className="text-2xl font-black text-gray-900">
@@ -581,8 +729,14 @@ export function MachinePay() {
                     </div>
                   )}
                 </div>
+              ) : (
+                <div className="hidden card items-center justify-center py-16 text-center text-gray-400 lg:flex">
+                  Selecione uma maquina para ver os detalhes.
+                </div>
               )}
             </section>
+          </div>
+            )}
           </div>
         )}
       </main>
