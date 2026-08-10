@@ -293,6 +293,10 @@ export function Estoque() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [expandirAlertasDepositos, setExpandirAlertasDepositos] =
+    useState(false);
+  const [expandirAlertasMaquinas, setExpandirAlertasMaquinas] =
+    useState(false);
 
   const carregarDados = useCallback(async ({ exibirLoading = true } = {}) => {
     try {
@@ -701,74 +705,102 @@ export function Estoque() {
             <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-2">
               {alertasDepositos.length > 0 && (
                 <div>
-                  <h3 className="mb-3 font-black text-gray-900">
-                    📦 Depósitos abaixo do mínimo
-                  </h3>
-                  <div className="space-y-2">
-                    {alertasDepositos.map((alerta) => (
-                      <div
-                        key={alerta.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3"
-                      >
-                        <div>
-                          <p className="font-bold text-gray-900">
-                            {alerta.produtoNome}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            {alerta.lojaNome}
-                          </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandirAlertasDepositos((atual) => !atual)
+                    }
+                    className="mb-3 flex w-full items-center justify-between gap-2 font-black text-gray-900"
+                    aria-expanded={expandirAlertasDepositos}
+                  >
+                    <span>
+                      📦 Depósitos abaixo do mínimo ({alertasDepositos.length})
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {expandirAlertasDepositos ? "▲" : "▼"}
+                    </span>
+                  </button>
+                  {expandirAlertasDepositos && (
+                    <div className="space-y-2">
+                      {alertasDepositos.map((alerta) => (
+                        <div
+                          key={alerta.id}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3"
+                        >
+                          <div>
+                            <p className="font-bold text-gray-900">
+                              {alerta.produtoNome}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {alerta.lojaNome}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-black text-red-600">
+                              {alerta.quantidade} unidades
+                            </p>
+                            <p className="text-xs text-red-700">
+                              mínimo: {alerta.minimo}
+                            </p>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-black text-red-600">
-                            {alerta.quantidade} unidades
-                          </p>
-                          <p className="text-xs text-red-700">
-                            mínimo: {alerta.minimo}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
               {alertasMaquinas.length > 0 && (
                 <div>
-                  <h3 className="mb-3 font-black text-gray-900">
-                    🎮 Máquinas abaixo da capacidade
-                  </h3>
-                  <div className="space-y-2">
-                    {alertasMaquinas.map((maquina) => (
-                      <Link
-                        key={maquina.id}
-                        to={`/maquinas/${maquina.id}`}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-orange-200 bg-orange-50 p-3 transition hover:border-orange-400 hover:shadow-sm"
-                      >
-                        <div>
-                          <p className="font-bold text-gray-900">
-                            {maquina.nome || maquina.codigo}
-                          </p>
-                          <p className="text-xs text-gray-600">
-                            {maquina.lojaNome} · {maquina.codigo}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-black text-orange-700">
-                            {Number(maquina.estoqueAtual || 0)} de{" "}
-                            {Number(maquina.capacidadePadrao || 0)}
-                          </p>
-                          <p className="text-xs text-orange-700">
-                            faltam{" "}
-                            {Math.max(
-                              0,
-                              Number(maquina.capacidadePadrao || 0) -
-                                Number(maquina.estoqueAtual || 0),
-                            )}
-                          </p>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandirAlertasMaquinas((atual) => !atual)
+                    }
+                    className="mb-3 flex w-full items-center justify-between gap-2 font-black text-gray-900"
+                    aria-expanded={expandirAlertasMaquinas}
+                  >
+                    <span>
+                      🎮 Máquinas abaixo da capacidade ({alertasMaquinas.length})
+                    </span>
+                    <span className="text-sm text-gray-500">
+                      {expandirAlertasMaquinas ? "▲" : "▼"}
+                    </span>
+                  </button>
+                  {expandirAlertasMaquinas && (
+                    <div className="space-y-2">
+                      {alertasMaquinas.map((maquina) => (
+                        <Link
+                          key={maquina.id}
+                          to={`/maquinas/${maquina.id}`}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-orange-200 bg-orange-50 p-3 transition hover:border-orange-400 hover:shadow-sm"
+                        >
+                          <div>
+                            <p className="font-bold text-gray-900">
+                              {maquina.nome || maquina.codigo}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {maquina.lojaNome} · {maquina.codigo}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-black text-orange-700">
+                              {Number(maquina.estoqueAtual || 0)} de{" "}
+                              {Number(maquina.capacidadePadrao || 0)}
+                            </p>
+                            <p className="text-xs text-orange-700">
+                              faltam{" "}
+                              {Math.max(
+                                0,
+                                Number(maquina.capacidadePadrao || 0) -
+                                  Number(maquina.estoqueAtual || 0),
+                              )}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
