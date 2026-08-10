@@ -103,7 +103,7 @@ export function UsuarioForm() {
     }
 
     if (
-      formData.role === "FUNCIONARIO" &&
+      ["FUNCIONARIO", "MACHINEPAY"].includes(formData.role) &&
       formData.lojasPermitidas.length === 0
     ) {
       setError("Funcionários devem ter acesso a pelo menos uma loja");
@@ -118,8 +118,9 @@ export function UsuarioForm() {
         email: formData.email,
         telefone: formData.telefone,
         role: formData.role,
-        lojasPermitidas:
-          formData.role === "FUNCIONARIO" ? formData.lojasPermitidas : [],
+        lojasPermitidas: ["FUNCIONARIO", "MACHINEPAY"].includes(formData.role)
+          ? formData.lojasPermitidas
+          : [],
       };
 
       // Só incluir senha se foi preenchida
@@ -301,8 +302,8 @@ export function UsuarioForm() {
               </div>
             </div>
 
-            {/* Lojas Permitidas (apenas para Funcionários) */}
-            {formData.role === "FUNCIONARIO" && (
+            {/* Lojas Permitidas (Funcionários e Funcionários Machine) */}
+            {["FUNCIONARIO", "MACHINEPAY"].includes(formData.role) && (
               <div>
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">
                   Lojas Autorizadas *
