@@ -109,6 +109,18 @@ export function Navbar() {
                 )}
                 {usuario?.role === "ADMIN" && (
                 <Link
+                  to="/creditos-remotos"
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive("/creditos-remotos")
+                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg scale-105"
+                      : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  🎟️ Vouchers Remotos
+                </Link>
+                )}
+                {usuario?.role === "ADMIN" && (
+                <Link
                   to="/produtos"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive("/produtos")
@@ -380,6 +392,19 @@ export function Navbar() {
                 }`}
               >
                 💳 Machine Pay
+              </Link>
+            )}
+            {usuario?.role === "ADMIN" && (
+              <Link
+                to="/creditos-remotos"
+                onClick={closeMenu}
+                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  isActive("/creditos-remotos")
+                    ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                    : "text-gray-300 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                🎟️ Vouchers Remotos
               </Link>
             )}
             {usuario?.role === "ADMIN" && (
