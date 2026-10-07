@@ -46,7 +46,7 @@ const QUANTIDADE_MAXIMA = 50;
 const descreverEscopo = (link) => {
   if (link.maquina) return link.maquina;
   if (link.lojas?.length) return `Lojas: ${link.lojas.join(", ")}`;
-  return "Máquinas TOYLAND";
+  return "Todas as máquinas Machine Pay";
 };
 
 // Folhas A4 dos vouchers: "TOYLAND" em cima, QR Code no meio e o valor
@@ -407,7 +407,7 @@ export function CreditosRemotos() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <PageHeader
           title="Vouchers Remotos"
-          subtitle="Vouchers com QR Code para jogar nas máquinas TOYLAND da Machine Pay"
+          subtitle="Vouchers com QR Code para jogar nas máquinas Machine Pay"
           icon="🔗"
         />
 
@@ -474,7 +474,7 @@ export function CreditosRemotos() {
                 </label>
                 <div className="space-y-1 text-sm">
                   {[
-                    ["toyland", "Todas as máquinas TOYLAND"],
+                    ["toyland", "Todas as máquinas Machine Pay"],
                     ["lojas", "Lojas escolhidas"],
                     ["maquina", "Uma máquina só"],
                   ].map(([valor, rotulo]) => (
@@ -495,7 +495,7 @@ export function CreditosRemotos() {
                 <div className="rounded-lg border border-gray-200 bg-white p-3 max-h-56 overflow-y-auto space-y-1">
                   {lojasMachinePay.length === 0 ? (
                     <p className="text-sm text-amber-700">
-                      Nenhuma loja ativa com máquina TOYLAND na Machine Pay.
+                      Nenhuma loja ativa com máquina Machine Pay.
                     </p>
                   ) : (
                     lojasMachinePay.map((loja) => (
@@ -558,11 +558,11 @@ export function CreditosRemotos() {
             {escopo === "toyland" && (
               <div className="mt-6 border-t border-gray-200 pt-4">
                 <p className="text-xs font-bold uppercase text-gray-500 mb-2">
-                  Máquinas TOYLAND
+                  Máquinas Machine Pay
                 </p>
                 {maquinasPermitidas.length === 0 ? (
                   <p className="text-sm text-amber-700">
-                    Nenhuma máquina ativa com "TOYLAND" no nome e ID Machine Pay.
+                    Nenhuma máquina ativa com ID Machine Pay.
                   </p>
                 ) : (
                   <ul className="text-sm text-gray-700 space-y-1">
