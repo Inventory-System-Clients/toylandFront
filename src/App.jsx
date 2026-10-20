@@ -23,6 +23,8 @@ import ManutencaoPage from "./pages/ManutencaoPage";
 import { Graficos } from "./pages/Graficos";
 import { Relatorios } from "./pages/Relatorios";
 import { MachinePay } from "./pages/MachinePay";
+import { CreditosRemotos } from "./pages/CreditosRemotos";
+import { CreditoRemotoPublico } from "./pages/CreditoRemotoPublico";
 import { Sangrias } from "./pages/Sangrias";
 import { StyleGuide } from "./pages/StyleGuide";
 import { Estoque } from "./pages/Estoque";
@@ -45,6 +47,7 @@ function App() {
             }
           />
           <Route path="/login" element={<Login />} />
+          <Route path="/creditos" element={<CreditoRemotoPublico />} />
           <Route
             path="/alertas"
             element={
@@ -256,6 +259,14 @@ function App() {
             element={
               <PrivateRoute roles={["ADMIN", "MACHINEPAY"]}>
                 <MachinePay />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/creditos-remotos"
+            element={
+              <PrivateRoute adminOnly>
+                <CreditosRemotos />
               </PrivateRoute>
             }
           />
