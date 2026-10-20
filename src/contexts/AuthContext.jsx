@@ -72,10 +72,6 @@ export function AuthProvider({ children }) {
   const isAdmin = () => usuario?.role === "ADMIN";
   const isMachinePay = () => usuario?.role === "MACHINEPAY";
   const hasRole = (...roles) => roles.includes(usuario?.role);
-  const pode = (permissao, roles = []) =>
-    usuario?.role === "ADMIN" ||
-    (usuario?.role === "MACHINEPAY" && permissao.startsWith("machinePay")) ||
-    (Array.isArray(roles) && roles.includes(usuario?.role));
 
   return (
     <AuthContext.Provider
@@ -88,7 +84,6 @@ export function AuthProvider({ children }) {
         isAdmin,
         isMachinePay,
         hasRole,
-        pode,
         signed: !!usuario,
       }}
     >
