@@ -23,6 +23,7 @@ import ManutencaoPage from "./pages/ManutencaoPage";
 import { Graficos } from "./pages/Graficos";
 import { Relatorios } from "./pages/Relatorios";
 import { MachinePay } from "./pages/MachinePay";
+import { MachinePay as MachinePayDetalhada } from "./pages/MachinePayDetalhada";
 import { CreditosRemotos } from "./pages/CreditosRemotos";
 import { CreditoRemotoPublico } from "./pages/CreditoRemotoPublico";
 import { Sangrias } from "./pages/Sangrias";
@@ -259,6 +260,14 @@ function App() {
             element={
               <PrivateRoute roles={["ADMIN", "MACHINEPAY"]}>
                 <MachinePay />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/machine-pay-detalhada"
+            element={
+              <PrivateRoute roles={["ADMIN", "MACHINEPAY"]}>
+                <MachinePayDetalhada />
               </PrivateRoute>
             }
           />
