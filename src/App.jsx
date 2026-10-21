@@ -23,6 +23,9 @@ import ManutencaoPage from "./pages/ManutencaoPage";
 import { Graficos } from "./pages/Graficos";
 import { Relatorios } from "./pages/Relatorios";
 import { MachinePay } from "./pages/MachinePay";
+import { MachinePayDetalhado } from "./pages/MachinePayDetalhado";
+import { HorariosPico as MachinePayHorariosPico } from "./pages/MachinePayHorariosPico";
+import { RankingMaquinas as MachinePayRanking } from "./pages/MachinePayRanking";
 import { CreditosRemotos } from "./pages/CreditosRemotos";
 import { CreditoRemotoPublico } from "./pages/CreditoRemotoPublico";
 import { Sangrias } from "./pages/Sangrias";
@@ -259,6 +262,30 @@ function App() {
             element={
               <PrivateRoute roles={["ADMIN", "MACHINEPAY"]}>
                 <MachinePay />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/machine-pay-detalhado"
+            element={
+              <PrivateRoute roles={["ADMIN", "MACHINEPAY"]}>
+                <MachinePayDetalhado />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/machine-pay-detalhado/horarios-pico"
+            element={
+              <PrivateRoute roles={["ADMIN", "MACHINEPAY"]}>
+                <MachinePayHorariosPico />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/machine-pay-detalhado/ranking"
+            element={
+              <PrivateRoute roles={["ADMIN", "MACHINEPAY"]}>
+                <MachinePayRanking />
               </PrivateRoute>
             }
           />

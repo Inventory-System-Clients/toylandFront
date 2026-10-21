@@ -107,6 +107,18 @@ export function Navbar() {
                   💳 Machine Pay
                 </Link>
                 )}
+                {hasRole("ADMIN", "MACHINEPAY") && (
+                <Link
+                  to="/machine-pay-detalhado"
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive("/machine-pay-detalhado")
+                      ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg scale-105"
+                      : "text-gray-300 hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  📡 Machine Pay detalhado
+                </Link>
+                )}
                 {usuario?.role === "ADMIN" && (
                 <Link
                   to="/creditos-remotos"
@@ -392,6 +404,19 @@ export function Navbar() {
                 }`}
               >
                 💳 Machine Pay
+              </Link>
+            )}
+            {hasRole("ADMIN", "MACHINEPAY") && (
+              <Link
+                to="/machine-pay-detalhado"
+                onClick={closeMenu}
+                className={`block px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                  isActive("/machine-pay-detalhado")
+                    ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                    : "text-gray-300 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                📡 Machine Pay detalhado
               </Link>
             )}
             {usuario?.role === "ADMIN" && (
