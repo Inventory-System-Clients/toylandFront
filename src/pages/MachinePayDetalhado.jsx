@@ -51,11 +51,12 @@ const SINAL_INFO = {
   SEM_SINAL: { label: "Não informado", className: "bg-gray-100 text-gray-600 border-gray-300", cor: "#9ca3af" },
 };
 
-const TIPOS_LEITOR = ["WEBSOCKET", "MQTT LITE", "MQTT Avançada"];
+const TIPOS_LEITOR = ["WEBSOCKET", "MQTT LITE", "MQTT Avançada", "Relé"];
 
 const MODO_RESPOSTA = {
   MQTT_INSTANTANEO: "MQTT Instantâneo",
   MQTT_CONFIRMADO: "MQTT Confirmado",
+  POST: "POST (consulta periódica)",
   SEM_RESPOSTA: "Sem resposta",
 };
 
