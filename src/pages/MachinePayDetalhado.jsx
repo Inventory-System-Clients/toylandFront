@@ -2104,7 +2104,7 @@ export function MachinePayDetalhado() {
           <AlertBox
             type="warning"
             title="Monitoramento não configurado"
-            message="Faltam as credenciais da Machine Pay no servidor (MACHINE_PAY_LOGIN_URL, MACHINE_PAY_LOGIN e MACHINE_PAY_PASSWORD)."
+            message="Faltam as credenciais da Machine Pay no servidor (MACHINE_PAY_LOGIN e MACHINE_PAY_PASSWORD)."
           />
         )}
         {monitor?.configurado && !monitor.ativo && (
