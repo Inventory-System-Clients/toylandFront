@@ -28,6 +28,29 @@ export function MaquinaForm() {
     }
   };
 
+  // Leitores da conta (Usr ID) no painel, para escolher o POS ID
+  const [leitores, setLeitores] = useState(null);
+  const [buscandoLeitores, setBuscandoLeitores] = useState(false);
+  const [erroLeitores, setErroLeitores] = useState("");
+
+  const buscarLeitores = async () => {
+    const usrId = formData.machinePayUsrId?.trim();
+    if (!usrId) return;
+    try {
+      setBuscandoLeitores(true);
+      setErroLeitores("");
+      const res = await api.get(`/machine-pay/leitores/${usrId}`);
+      setLeitores(res.data);
+    } catch (error) {
+      setLeitores(null);
+      setErroLeitores(
+        error.response?.data?.error || "Não foi possível buscar os leitores dessa conta",
+      );
+    } finally {
+      setBuscandoLeitores(false);
+    }
+  };
+
   const [formData, setFormData] = useState({
     codigo: "",
     nome: "",
@@ -289,6 +312,65 @@ export function MaquinaForm() {
                   <p className="text-xs text-gray-500 mt-1">
                     POS ID usado para buscar Pix e cartão automaticamente. O Usr ID será preenchido automaticamente.
                   </p>
+                  {formData.machinePayUsrId && (
+                    <button
+                      type="button"
+                      className="btn-secondary text-sm px-3 mt-2"
+                      disabled={buscandoLeitores}
+                      onClick={buscarLeitores}
+                    >
+                      {buscandoLeitores ? "Buscando..." : "Buscar POS ID pelo Usr ID"}
+                    </button>
+                  )}
+                  {erroLeitores && (
+                    <p className="text-xs text-red-600 mt-1">{erroLeitores}</p>
+                  )}
+                  {leitores && (
+                    <div className="mt-2 border border-gray-200 rounded-lg max-h-64 overflow-y-auto divide-y divide-gray-100 bg-white">
+                      {leitores.length === 0 && (
+                        <p className="text-xs text-gray-500 p-3">
+                          Nenhum leitor encontrado nessa conta.
+                        </p>
+                      )}
+                      {leitores.map((leitor) => {
+                        const outraMaquina =
+                          leitor.maquinaVinculada && leitor.maquinaVinculada.id !== id
+                            ? leitor.maquinaVinculada
+                            : null;
+                        const selecionado = formData.machinePayPosId === leitor.posId;
+                        return (
+                          <button
+                            key={leitor.posId}
+                            type="button"
+                            disabled={Boolean(outraMaquina)}
+                            onClick={() => {
+                              setFormData((prev) => ({ ...prev, machinePayPosId: leitor.posId }));
+                              setLeitores(null);
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between gap-2 ${
+                              selecionado ? "bg-primary/10" : "hover:bg-gray-50"
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            <span>
+                              <span className="font-semibold text-gray-800">
+                                {leitor.nomePonto || "Sem nome"}
+                              </span>
+                              <span className="block text-xs text-gray-500">
+                                Caixa {leitor.posId}
+                                {outraMaquina &&
+                                  ` · já usado em ${outraMaquina.codigo || outraMaquina.nome}`}
+                              </span>
+                            </span>
+                            <span
+                              className={`text-xs ${leitor.online ? "text-emerald-600" : "text-red-500"}`}
+                            >
+                              {leitor.online ? "Online" : "Offline"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div>
