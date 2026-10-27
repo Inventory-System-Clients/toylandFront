@@ -360,14 +360,14 @@ export function Navbar() {
       {/* Menu Mobile Dropdown */}
       {isMenuOpen && (
         <div className="bg-gray-900 border-t border-white/10">
-          <div className="px-4 py-3 flex flex-wrap gap-2">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {(temPersonalizacao || usuario?.role !== "MACHINEPAY") && (
               <>
                 {pode("dashboard", usuario?.role !== "MACHINEPAY") && (
                 <Link
                   to="/"
                   onClick={closeMenu}
-                  className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive("/")
                       ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                       : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -380,7 +380,7 @@ export function Navbar() {
                 <Link
                   to="/movimentacoes"
                   onClick={closeMenu}
-                  className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive("/movimentacoes")
                       ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                       : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -397,7 +397,7 @@ export function Navbar() {
                 <Link
                   to="/estoque"
                   onClick={closeMenu}
-                  className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive("/estoque")
                       ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                       : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -410,7 +410,7 @@ export function Navbar() {
                 <Link
                   to="/relatorios"
                   onClick={closeMenu}
-                  className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive("/relatorios")
                       ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                       : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -425,7 +425,7 @@ export function Navbar() {
               <Link
                 to="/machine-pay"
                 onClick={closeMenu}
-                className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                   isActive("/machine-pay")
                     ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                     : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -438,7 +438,7 @@ export function Navbar() {
               <Link
                 to="/machine-pay-detalhado"
                 onClick={closeMenu}
-                className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                   isActive("/machine-pay-detalhado")
                     ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                     : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -451,7 +451,7 @@ export function Navbar() {
               <Link
                 to="/creditos-remotos"
                 onClick={closeMenu}
-                className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                   isActive("/creditos-remotos")
                     ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                     : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -464,7 +464,7 @@ export function Navbar() {
             <Link
               to="/produtos"
               onClick={closeMenu}
-              className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                 isActive("/produtos")
                   ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -479,7 +479,7 @@ export function Navbar() {
                 <Link
                   to="/manutencao"
                   onClick={closeMenu}
-                  className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive("/manutencao")
                       ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                       : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -492,7 +492,7 @@ export function Navbar() {
                 <Link
                   to="/maquinas"
                   onClick={closeMenu}
-                  className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive("/maquinas")
                       ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                       : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -505,7 +505,7 @@ export function Navbar() {
                 <Link
                   to="/lojas"
                   onClick={closeMenu}
-                  className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive("/lojas")
                       ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                       : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -521,7 +521,7 @@ export function Navbar() {
             <Link
               to="/sangrias"
               onClick={closeMenu}
-              className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                 isActive("/sangrias")
                   ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -534,7 +534,7 @@ export function Navbar() {
             <Link
               to="/veiculos"
               onClick={closeMenu}
-              className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                 isActive("/veiculos")
                   ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -547,7 +547,7 @@ export function Navbar() {
             <Link
               to="/produtos-a-comprar"
               onClick={closeMenu}
-              className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                 isActive("/produtos-a-comprar")
                   ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                   : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -562,7 +562,7 @@ export function Navbar() {
                 <Link
                   to="/fornecedores"
                   onClick={closeMenu}
-                  className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive("/fornecedores")
                       ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                       : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -575,7 +575,7 @@ export function Navbar() {
                 <Link
                   to="/graficos"
                   onClick={closeMenu}
-                  className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive("/graficos")
                       ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                       : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -588,7 +588,7 @@ export function Navbar() {
                 <Link
                   to="/usuarios"
                   onClick={closeMenu}
-                  className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive("/usuarios")
                       ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
                       : "text-gray-300 hover:bg-white/10 hover:text-white"
@@ -601,7 +601,7 @@ export function Navbar() {
             )}
 
             {/* User Info Mobile */}
-            <div className="md:hidden basis-full mt-2 pt-4 border-t border-white/10">
+            <div className="md:hidden col-span-full mt-2 pt-4 border-t border-white/10">
               <div className="bg-white/5 px-4 py-3 rounded-lg border border-white/10 mb-3">
                 <div className="text-sm font-semibold text-white">
                   {usuario?.nome}
