@@ -169,8 +169,8 @@ function PayoutForaDoNormal({ payout, periodo }) {
 
 // Conteúdo sem Navbar/Footer: também é usado como aba da página Machine Pay
 export function RankingMaquinasConteudo() {
-  const { usuario } = useAuth();
-  const verValores = usuario?.role === "ADMIN" || usuario?.role === "MACHINEPAY";
+  const { hasRole, pode } = useAuth();
+  const verValores = pode("machinePay.valores", hasRole("ADMIN", "MACHINEPAY"));
 
   const [periodo, setPeriodo] = useState("7dias");
   const [usrId, setUsrId] = useState("");

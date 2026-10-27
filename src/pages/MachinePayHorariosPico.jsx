@@ -162,8 +162,8 @@ function GraficoBarras({ dados, chaveX, campo, metrica, rotuloX, ticks }) {
 
 // Conteúdo sem Navbar/Footer: também é usado como aba da página Machine Pay
 export function HorariosPicoConteudo() {
-  const { usuario } = useAuth();
-  const verValores = usuario?.role === "ADMIN" || usuario?.role === "MACHINEPAY";
+  const { hasRole, pode } = useAuth();
+  const verValores = pode("machinePay.valores", hasRole("ADMIN", "MACHINEPAY"));
 
   const [dias, setDias] = useState(30);
   const [metrica, setMetrica] = useState(verValores ? "valor" : "qtd");

@@ -1,8 +1,12 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { rotaInicial } from "../utils/permissoes";
 
-export function PrivateRoute({ children, adminOnly = false, roles = [] }) {
-  const { signed, loading, isAdmin, hasRole } = useAuth();
+// `permissao`: chave (ou lista) de utils/permissoes.js. Sem personalização,
+// vale o acesso de antes (adminOnly / roles).
+export function PrivateRoute({ children, adminOnly = false, roles = [], permissao }) {
+  const { signed, loading, isAdmin, hasRole, pode, usuario } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -16,12 +20,26 @@ export function PrivateRoute({ children, adminOnly = false, roles = [] }) {
     return <Navigate to="/login" />;
   }
 
-  if (adminOnly && !isAdmin()) {
-    return <Navigate to="/" />;
-  }
+  const acessoLegado =
+    (!adminOnly || isAdmin()) && (roles.length === 0 || hasRole(...roles));
+  const permitido = permissao ? pode(permissao, acessoLegado) : acessoLegado;
 
-  if (roles.length > 0 && !hasRole(...roles)) {
-    return <Navigate to="/" />;
+  if (!permitido) {
+    const destino = rotaInicial(usuario);
+    // Sem nenhuma aba liberada: evita redirecionar para a própria página
+    if (destino === location.pathname) {
+      return (
+        <div className="flex min-h-screen items-center justify-center p-6 text-center">
+          <div>
+            <p className="text-lg font-semibold text-gray-800">Sem acesso</p>
+            <p className="text-sm text-gray-600">
+              Seu usuário ainda não tem nenhuma tela liberada. Fale com o administrador.
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return <Navigate to={destino} />;
   }
 
   return children;

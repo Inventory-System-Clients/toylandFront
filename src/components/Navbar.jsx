@@ -5,7 +5,7 @@ import { useAlertas } from "../contexts/AlertasContext";
 import { useState } from "react";
 
 export function Navbar() {
-  const { usuario, logout, hasRole } = useAuth();
+  const { usuario, logout, hasRole, pode, temPersonalizacao } = useAuth();
   const { totalGeral } = useAlertas();
   const navigate = useNavigate();
   const location = useLocation();
@@ -51,6 +51,7 @@ export function Navbar() {
             {/* Menu Desktop */}
             <div className="hidden">
               <div className="flex items-center space-x-2">
+                {pode("dashboard", true) && (
                 <Link
                   to="/"
                   className={`    rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -61,6 +62,8 @@ export function Navbar() {
                 >
                   📊 Dashboard
                 </Link>
+                )}
+                {pode("movimentacoes", true) && (
                 <Link
                   to="/movimentacoes"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -71,8 +74,10 @@ export function Navbar() {
                 >
                   📦 Movimentações
                 </Link>
-                {usuario?.role === "ADMIN" && (
+                )}
+                {(temPersonalizacao || usuario?.role === "ADMIN") && (
                   <>
+                    {pode("estoque", usuario?.role === "ADMIN") && (
                     <Link
                       to="/estoque"
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -83,6 +88,8 @@ export function Navbar() {
                     >
                       📦 Estoque
                     </Link>
+                    )}
+                    {pode("relatorios", usuario?.role === "ADMIN") && (
                     <Link
                       to="/relatorios"
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -93,9 +100,10 @@ export function Navbar() {
                     >
                       📄 Relatórios
                     </Link>
+                    )}
                   </>
                 )}
-                {hasRole("ADMIN", "MACHINEPAY") && (
+                {pode("machinePay", hasRole("ADMIN", "MACHINEPAY")) && (
                 <Link
                   to="/machine-pay"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -107,7 +115,7 @@ export function Navbar() {
                   💳 Machine Pay
                 </Link>
                 )}
-                {hasRole("ADMIN", "MACHINEPAY") && (
+                {pode("machinePayDetalhado", hasRole("ADMIN", "MACHINEPAY")) && (
                 <Link
                   to="/machine-pay-detalhado"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -119,7 +127,7 @@ export function Navbar() {
                   📡 Machine Pay detalhado
                 </Link>
                 )}
-                {usuario?.role === "ADMIN" && (
+                {pode("vouchers", usuario?.role === "ADMIN") && (
                 <Link
                   to="/creditos-remotos"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -131,7 +139,7 @@ export function Navbar() {
                   🎟️ Vouchers Remotos
                 </Link>
                 )}
-                {usuario?.role === "ADMIN" && (
+                {pode("produtos", usuario?.role === "ADMIN") && (
                 <Link
                   to="/produtos"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -143,6 +151,7 @@ export function Navbar() {
                   🧸 Produtos
                 </Link>
                 )}
+                {pode("manutencao", true) && (
                 <Link
                   to="/manutencao"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -153,6 +162,8 @@ export function Navbar() {
                 >
                   🛠️ Manutenção
                 </Link>
+                )}
+                {pode("maquinas", true) && (
                 <Link
                   to="/maquinas"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -163,6 +174,8 @@ export function Navbar() {
                 >
                   🎮 Máquinas
                 </Link>
+                )}
+                {pode("lojas", true) && (
                 <Link
                   to="/lojas"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -173,7 +186,8 @@ export function Navbar() {
                 >
                   🏪 Lojas
                 </Link>
-                {usuario?.role === "ADMIN" && (
+                )}
+                {pode("produtosComprar", usuario?.role === "ADMIN") && (
                 <Link
                   to="/produtos-a-comprar"
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -185,8 +199,9 @@ export function Navbar() {
                   🛒 Carrinho
                 </Link>
                 )}
-                {usuario?.role === "ADMIN" && (
+                {(temPersonalizacao || usuario?.role === "ADMIN") && (
                   <>
+                    {pode("fornecedores", usuario?.role === "ADMIN") && (
                     <Link
                       to="/fornecedores"
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -197,6 +212,8 @@ export function Navbar() {
                     >
                       🚚 Fornecedores
                     </Link>
+                    )}
+                    {pode("graficos", usuario?.role === "ADMIN") && (
                     <Link
                       to="/graficos"
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -207,6 +224,8 @@ export function Navbar() {
                     >
                       📈 Gráficos
                     </Link>
+                    )}
+                    {usuario?.role === "ADMIN" && (
                     <Link
                       to="/usuarios"
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
@@ -217,6 +236,7 @@ export function Navbar() {
                     >
                       👥 Usuários
                     </Link>
+                    )}
                   </>
                 )}
               </div>
@@ -225,7 +245,7 @@ export function Navbar() {
           {/* User Info e Logout */}
           <div className="flex items-center space-x-4">
             {/* Botão Alertas Mobile (somente ícone) */}
-            {usuario?.role === "ADMIN" && (
+            {pode("alertas", usuario?.role === "ADMIN") && (
               <button
                 onClick={() => navigate("/alertas")}
                 className={`flex lg:hidden relative p-2 rounded-lg hover:bg-white/10 transition-colors ${
@@ -298,7 +318,7 @@ export function Navbar() {
                 )}
               </div>
             </div>
-            {usuario?.role === "ADMIN" && (
+            {pode("alertas", usuario?.role === "ADMIN") && (
               <button
                 onClick={() => navigate("/alertas")}
                 className={`hidden lg:flex relative bg-linear-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 items-center gap-2 ${
@@ -341,8 +361,9 @@ export function Navbar() {
       {isMenuOpen && (
         <div className="bg-gray-900 border-t border-white/10">
           <div className="px-4 py-3 flex flex-wrap gap-2">
-            {usuario?.role !== "MACHINEPAY" && (
+            {(temPersonalizacao || usuario?.role !== "MACHINEPAY") && (
               <>
+                {pode("dashboard", usuario?.role !== "MACHINEPAY") && (
                 <Link
                   to="/"
                   onClick={closeMenu}
@@ -354,6 +375,8 @@ export function Navbar() {
                 >
                   📊 Dashboard
                 </Link>
+                )}
+                {pode("movimentacoes", usuario?.role !== "MACHINEPAY") && (
                 <Link
                   to="/movimentacoes"
                   onClick={closeMenu}
@@ -365,10 +388,12 @@ export function Navbar() {
                 >
                   📦 Movimentações
                 </Link>
+                )}
               </>
             )}
-            {usuario?.role === "ADMIN" && (
+            {(temPersonalizacao || usuario?.role === "ADMIN") && (
               <>
+                {pode("estoque", usuario?.role === "ADMIN") && (
                 <Link
                   to="/estoque"
                   onClick={closeMenu}
@@ -380,6 +405,8 @@ export function Navbar() {
                 >
                   📦 Estoque
                 </Link>
+                )}
+                {pode("relatorios", usuario?.role === "ADMIN") && (
                 <Link
                   to="/relatorios"
                   onClick={closeMenu}
@@ -391,9 +418,10 @@ export function Navbar() {
                 >
                   📄 Relatórios
                 </Link>
+                )}
               </>
             )}
-            {hasRole("ADMIN", "MACHINEPAY") && (
+            {pode("machinePay", hasRole("ADMIN", "MACHINEPAY")) && (
               <Link
                 to="/machine-pay"
                 onClick={closeMenu}
@@ -406,7 +434,7 @@ export function Navbar() {
                 💳 Machine Pay
               </Link>
             )}
-            {hasRole("ADMIN", "MACHINEPAY") && (
+            {pode("machinePayDetalhado", hasRole("ADMIN", "MACHINEPAY")) && (
               <Link
                 to="/machine-pay-detalhado"
                 onClick={closeMenu}
@@ -419,7 +447,7 @@ export function Navbar() {
                 📡 Machine Pay detalhado
               </Link>
             )}
-            {usuario?.role === "ADMIN" && (
+            {pode("vouchers", usuario?.role === "ADMIN") && (
               <Link
                 to="/creditos-remotos"
                 onClick={closeMenu}
@@ -432,7 +460,7 @@ export function Navbar() {
                 🎟️ Vouchers Remotos
               </Link>
             )}
-            {usuario?.role === "ADMIN" && (
+            {pode("produtos", usuario?.role === "ADMIN") && (
             <Link
               to="/produtos"
               onClick={closeMenu}
@@ -445,8 +473,9 @@ export function Navbar() {
               🧸 Produtos
             </Link>
             )}
-            {usuario?.role !== "MACHINEPAY" && (
+            {(temPersonalizacao || usuario?.role !== "MACHINEPAY") && (
               <>
+                {pode("manutencao", usuario?.role !== "MACHINEPAY") && (
                 <Link
                   to="/manutencao"
                   onClick={closeMenu}
@@ -458,6 +487,8 @@ export function Navbar() {
                 >
                   🛠️ Manutenção
                 </Link>
+                )}
+                {pode("maquinas", usuario?.role !== "MACHINEPAY") && (
                 <Link
                   to="/maquinas"
                   onClick={closeMenu}
@@ -469,6 +500,8 @@ export function Navbar() {
                 >
                   🎮 Máquinas
                 </Link>
+                )}
+                {pode("lojas", usuario?.role !== "MACHINEPAY") && (
                 <Link
                   to="/lojas"
                   onClick={closeMenu}
@@ -480,9 +513,37 @@ export function Navbar() {
                 >
                   🏪 Lojas
                 </Link>
+                )}
               </>
             )}
-            {usuario?.role === "ADMIN" && (
+            {/* Sem item no menu padrão: só para usuários com acesso personalizado */}
+            {temPersonalizacao && pode("sangrias") && (
+            <Link
+              to="/sangrias"
+              onClick={closeMenu}
+              className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                isActive("/sangrias")
+                  ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                  : "text-gray-300 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              💵 Sangrias
+            </Link>
+            )}
+            {temPersonalizacao && pode("veiculos") && (
+            <Link
+              to="/veiculos"
+              onClick={closeMenu}
+              className={`inline-flex items-center whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                isActive("/veiculos")
+                  ? "bg-linear-to-r from-primary to-accent-yellow text-white shadow-lg"
+                  : "text-gray-300 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              🚗 Veículos
+            </Link>
+            )}
+            {pode("produtosComprar", usuario?.role === "ADMIN") && (
             <Link
               to="/produtos-a-comprar"
               onClick={closeMenu}
@@ -495,8 +556,9 @@ export function Navbar() {
               🛒 Produtos a Comprar
             </Link>
             )}
-            {usuario?.role === "ADMIN" && (
+            {(temPersonalizacao || usuario?.role === "ADMIN") && (
               <>
+                {pode("fornecedores", usuario?.role === "ADMIN") && (
                 <Link
                   to="/fornecedores"
                   onClick={closeMenu}
@@ -508,6 +570,8 @@ export function Navbar() {
                 >
                   🚚 Fornecedores
                 </Link>
+                )}
+                {pode("graficos", usuario?.role === "ADMIN") && (
                 <Link
                   to="/graficos"
                   onClick={closeMenu}
@@ -519,6 +583,8 @@ export function Navbar() {
                 >
                   📈 Gráficos
                 </Link>
+                )}
+                {usuario?.role === "ADMIN" && (
                 <Link
                   to="/usuarios"
                   onClick={closeMenu}
@@ -530,6 +596,7 @@ export function Navbar() {
                 >
                   👥 Usuários
                 </Link>
+                )}
               </>
             )}
 
@@ -562,7 +629,7 @@ export function Navbar() {
                   )}
                 </div>
               </div>
-              {usuario?.role === "ADMIN" && (
+              {pode("alertas", usuario?.role === "ADMIN") && (
                 <Link
                   to="/alertas"
                   onClick={closeMenu}

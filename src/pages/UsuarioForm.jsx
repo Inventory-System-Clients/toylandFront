@@ -2,6 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import api from "../services/api";
+import {
+  CATALOGO_ABAS,
+  PERMISSOES_PADRAO_POR_ROLE,
+  chavesFilhas,
+} from "../utils/permissoes";
 
 export function UsuarioForm() {
   const { id } = useParams();
@@ -16,6 +21,8 @@ export function UsuarioForm() {
     telefone: "",
     role: "FUNCIONARIO",
     lojasPermitidas: [],
+    // null = acesso padrão do perfil; array = abas/funcionalidades escolhidas
+    permissoes: null,
   });
 
   const [lojas, setLojas] = useState([]);
@@ -52,6 +59,7 @@ export function UsuarioForm() {
         telefone: usuario.telefone || "",
         role: usuario.role,
         lojasPermitidas: usuario.permissoesLojas?.map((p) => p.lojaId) || [],
+        permissoes: Array.isArray(usuario.permissoes) ? usuario.permissoes : null,
       });
     } catch (error) {
       setError("Erro ao carregar usuário");
@@ -76,6 +84,30 @@ export function UsuarioForm() {
     }
 
     setFormData({ ...formData, lojasPermitidas: lojasAtuais });
+  };
+
+  const personalizado = Array.isArray(formData.permissoes);
+
+  const alternarPersonalizacao = () => {
+    setFormData((atual) => ({
+      ...atual,
+      // Começa pelo acesso padrão do perfil, para o ADMIN só ajustar
+      permissoes: Array.isArray(atual.permissoes)
+        ? null
+        : [...(PERMISSOES_PADRAO_POR_ROLE[atual.role] || [])],
+    }));
+  };
+
+  const alternarPermissao = (chave, aba) => {
+    setFormData((atual) => {
+      const lista = atual.permissoes || [];
+      if (lista.includes(chave)) {
+        // Desmarcar a aba remove também as funcionalidades dela
+        const remover = aba ? [chave, ...chavesFilhas(aba)] : [chave];
+        return { ...atual, permissoes: lista.filter((c) => !remover.includes(c)) };
+      }
+      return { ...atual, permissoes: [...lista, chave] };
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -121,6 +153,7 @@ export function UsuarioForm() {
         lojasPermitidas: ["FUNCIONARIO", "MACHINEPAY"].includes(formData.role)
           ? formData.lojasPermitidas
           : [],
+        permissoes: formData.role === "ADMIN" ? null : formData.permissoes,
       };
 
       // Só incluir senha se foi preenchida
@@ -333,6 +366,75 @@ export function UsuarioForm() {
                   <p className="mt-2 text-sm text-gray-600">
                     {formData.lojasPermitidas.length} loja(s) selecionada(s)
                   </p>
+                )}
+              </div>
+            )}
+
+            {/* Acesso personalizado (abas e funcionalidades) */}
+            {formData.role !== "ADMIN" && (
+              <div>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Acesso personalizado
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                      {personalizado
+                        ? "O usuário vê e usa só o que estiver marcado abaixo."
+                        : "Desligado: o usuário segue o acesso padrão do perfil."}
+                    </p>
+                  </div>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={personalizado}
+                      onChange={alternarPersonalizacao}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    Personalizar acesso
+                  </label>
+                </div>
+
+                {personalizado && (
+                  <div className="space-y-3 rounded-lg border border-gray-300 p-4">
+                    {CATALOGO_ABAS.map((aba) => {
+                      const abaLiberada = formData.permissoes.includes(aba.chave);
+                      return (
+                        <div key={aba.chave} className="rounded-lg bg-gray-50 p-3">
+                          <label className="flex cursor-pointer items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={abaLiberada}
+                              onChange={() => alternarPermissao(aba.chave, aba)}
+                              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            />
+                            <span className="font-medium text-gray-900">{aba.label}</span>
+                          </label>
+                          {abaLiberada && aba.funcionalidades?.length > 0 && (
+                            <div className="mt-2 space-y-1 pl-7">
+                              {aba.funcionalidades.map((f) => (
+                                <label
+                                  key={f.chave}
+                                  className="flex cursor-pointer items-center gap-3 text-sm text-gray-700"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={formData.permissoes.includes(f.chave)}
+                                    onChange={() => alternarPermissao(f.chave)}
+                                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                  />
+                                  {f.label}
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <p className="text-xs text-gray-500">
+                      A tela de Usuários continua só para administradores.
+                    </p>
+                  </div>
                 )}
               </div>
             )}

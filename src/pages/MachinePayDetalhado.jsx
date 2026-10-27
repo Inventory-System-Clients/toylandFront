@@ -292,16 +292,18 @@ function usePagina(chaveFiltros) {
 // Mesmas roles da página Machine Pay original: ADMIN e MACHINEPAY veem valores,
 // extrato, crédito e devolução; horário/região/localização só o ADMIN altera.
 function usePermissoesMachinePay() {
-  const { usuario } = useAuth();
+  const { usuario, pode } = useAuth();
   const isAdmin = usuario?.role === "ADMIN";
   const acessoMachinePay = isAdmin || usuario?.role === "MACHINEPAY";
   return {
     isAdmin,
-    verValores: acessoMachinePay,
-    podeExtrato: acessoMachinePay,
-    podeCredito: acessoMachinePay,
-    podeDevolver: acessoMachinePay,
-    podeHorario: isAdmin,
+    verValores: pode("machinePay.valores", acessoMachinePay),
+    podeExtrato: pode("machinePay.extrato", acessoMachinePay),
+    podeCredito: pode("machinePay.creditoRemoto", acessoMachinePay),
+    podeDevolver: pode("machinePay.devolucao", acessoMachinePay),
+    podeHorario: pode("machinePay.horario", isAdmin),
+    // Atalho de manutenção da máquina: mesma regra da tela Manutenção
+    podeManutencao: pode("manutencao.gerenciar", isAdmin),
   };
 }
 
@@ -1693,8 +1695,8 @@ function HistoricoManutencoesMaquina({ manutencoes, onFechar }) {
 function DetalheMaquina({ posId, onClose }) {
   const [dias, setDias] = useState(30);
   const permissoes = usePermissoesMachinePay();
-  // Manutenção por máquina: no Toyland só o ADMIN cria e vê todas as manutenções
-  const podeCriarManutencao = permissoes.isAdmin;
+  // Manutenção por máquina: quem cria e vê todas as manutenções (ADMIN ou permissão)
+  const podeCriarManutencao = permissoes.podeManutencao;
   const [novaManutencaoAberta, setNovaManutencaoAberta] = useState(false);
   const [historicoAberto, setHistoricoAberto] = useState(false);
   const [versaoManutencoes, setVersaoManutencoes] = useState(0);

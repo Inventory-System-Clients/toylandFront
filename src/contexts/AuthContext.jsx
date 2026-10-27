@@ -14,6 +14,20 @@ export function AuthProvider({ children }) {
     if (token && usuarioSalvo) {
       setUsuario(JSON.parse(usuarioSalvo));
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      // Atualiza role/permissões em segundo plano (o ADMIN pode ter alterado)
+      api
+        .get("/auth/perfil")
+        .then((res) => {
+          const atual = {
+            ...JSON.parse(usuarioSalvo),
+            role: res.data.role,
+            permissoes: res.data.permissoes ?? null,
+          };
+          localStorage.setItem("usuario", JSON.stringify(atual));
+          setUsuario(atual);
+        })
+        .catch(() => {});
     }
 
     setLoading(false);
@@ -73,6 +87,20 @@ export function AuthProvider({ children }) {
   const isMachinePay = () => usuario?.role === "MACHINEPAY";
   const hasRole = (...roles) => roles.includes(usuario?.role);
 
+  // Permissões personalizadas (utils/permissoes.js). `legado` é o acesso de
+  // quem não tem personalização (o comportamento de antes, pela role).
+  const temPersonalizacao =
+    usuario?.role !== "ADMIN" && Array.isArray(usuario?.permissoes);
+  const pode = (chave, legado = false) => {
+    if (!usuario) return false;
+    if (usuario.role === "ADMIN") return true;
+    if (temPersonalizacao) {
+      const chaves = Array.isArray(chave) ? chave : [chave];
+      return chaves.some((c) => usuario.permissoes.includes(c));
+    }
+    return legado;
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -84,6 +112,8 @@ export function AuthProvider({ children }) {
         isAdmin,
         isMachinePay,
         hasRole,
+        pode,
+        temPersonalizacao,
         signed: !!usuario,
       }}
     >

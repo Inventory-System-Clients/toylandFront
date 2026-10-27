@@ -44,7 +44,7 @@ function App() {
           <Route
             path="/veiculos"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="veiculos">
                 <Veiculos />
               </PrivateRoute>
             }
@@ -54,7 +54,7 @@ function App() {
           <Route
             path="/alertas"
             element={
-              <PrivateRoute adminOnly>
+              <PrivateRoute permissao="alertas" adminOnly>
                 <Alertas />
               </PrivateRoute>
             }
@@ -64,7 +64,7 @@ function App() {
           <Route
             path="/"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="dashboard">
                 <Dashboard />
               </PrivateRoute>
             }
@@ -96,7 +96,7 @@ function App() {
           <Route
             path="/lojas"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="lojas">
                 <Lojas />
               </PrivateRoute>
             }
@@ -104,7 +104,7 @@ function App() {
           <Route
             path="/lojas/:id"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="lojas">
                 <LojaDetalhes />
               </PrivateRoute>
             }
@@ -112,7 +112,7 @@ function App() {
           <Route
             path="/lojas/nova"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="lojas.gerenciar">
                 <LojaForm />
               </PrivateRoute>
             }
@@ -120,7 +120,7 @@ function App() {
           <Route
             path="/lojas/:id/editar"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="lojas.gerenciar">
                 <LojaForm />
               </PrivateRoute>
             }
@@ -128,7 +128,7 @@ function App() {
           <Route
             path="/maquinas"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="maquinas">
                 <Maquinas />
               </PrivateRoute>
             }
@@ -136,7 +136,7 @@ function App() {
           <Route
             path="/maquinas/nova"
             element={
-              <PrivateRoute adminOnly>
+              <PrivateRoute permissao="maquinas.gerenciar" adminOnly>
                 <MaquinaForm />
               </PrivateRoute>
             }
@@ -144,7 +144,7 @@ function App() {
           <Route
             path="/maquinas/:id/editar"
             element={
-              <PrivateRoute adminOnly>
+              <PrivateRoute permissao="maquinas.gerenciar" adminOnly>
                 <MaquinaForm />
               </PrivateRoute>
             }
@@ -152,7 +152,7 @@ function App() {
           <Route
             path="/maquinas/:id"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="maquinas">
                 <MaquinaDetalhes />
               </PrivateRoute>
             }
@@ -160,7 +160,7 @@ function App() {
           <Route
             path="/produtos"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="produtos">
                 <Produtos />
               </PrivateRoute>
             }
@@ -168,7 +168,7 @@ function App() {
           <Route
             path="/produtos-a-comprar"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="produtosComprar">
                 <ProdutosAComprar />
               </PrivateRoute>
             }
@@ -176,7 +176,7 @@ function App() {
           <Route
             path="/produtos/novo"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="produtos.gerenciar">
                 <ProdutoForm />
               </PrivateRoute>
             }
@@ -184,7 +184,7 @@ function App() {
           <Route
             path="/produtos/:id/editar"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="produtos.gerenciar">
                 <ProdutoForm />
               </PrivateRoute>
             }
@@ -192,7 +192,7 @@ function App() {
           <Route
             path="/movimentacoes"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="movimentacoes">
                 <Movimentacoes />
               </PrivateRoute>
             }
@@ -200,7 +200,7 @@ function App() {
           <Route
             path="/fornecedores"
             element={
-              <PrivateRoute adminOnly>
+              <PrivateRoute permissao="fornecedores" adminOnly>
                 <Fornecedores />
               </PrivateRoute>
             }
@@ -208,7 +208,7 @@ function App() {
           <Route
             path="/fornecedores/novo"
             element={
-              <PrivateRoute adminOnly>
+              <PrivateRoute permissao="fornecedores" adminOnly>
                 <FornecedorForm />
               </PrivateRoute>
             }
@@ -216,7 +216,7 @@ function App() {
           <Route
             path="/fornecedores/:id/editar"
             element={
-              <PrivateRoute adminOnly>
+              <PrivateRoute permissao="fornecedores" adminOnly>
                 <FornecedorForm />
               </PrivateRoute>
             }
@@ -224,7 +224,7 @@ function App() {
           <Route
             path="/estoque"
             element={
-              <PrivateRoute adminOnly>
+              <PrivateRoute permissao="estoque" adminOnly>
                 <Estoque />
               </PrivateRoute>
             }
@@ -236,7 +236,7 @@ function App() {
           <Route
             path="/manutencao"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="manutencao">
                 <ManutencaoPage />
               </PrivateRoute>
             }
@@ -244,7 +244,7 @@ function App() {
           <Route
             path="/graficos"
             element={
-              <PrivateRoute adminOnly>
+              <PrivateRoute permissao="graficos" adminOnly>
                 <Graficos />
               </PrivateRoute>
             }
@@ -252,7 +252,7 @@ function App() {
           <Route
             path="/relatorios"
             element={
-              <PrivateRoute adminOnly>
+              <PrivateRoute permissao="relatorios" adminOnly>
                 <Relatorios />
               </PrivateRoute>
             }
@@ -260,7 +260,7 @@ function App() {
           <Route
             path="/machine-pay"
             element={
-              <PrivateRoute roles={["ADMIN", "MACHINEPAY"]}>
+              <PrivateRoute permissao="machinePay" roles={["ADMIN", "MACHINEPAY"]}>
                 <MachinePay />
               </PrivateRoute>
             }
@@ -268,7 +268,7 @@ function App() {
           <Route
             path="/machine-pay-detalhado"
             element={
-              <PrivateRoute roles={["ADMIN", "MACHINEPAY"]}>
+              <PrivateRoute permissao="machinePayDetalhado" roles={["ADMIN", "MACHINEPAY"]}>
                 <MachinePayDetalhado />
               </PrivateRoute>
             }
@@ -276,7 +276,7 @@ function App() {
           <Route
             path="/machine-pay-detalhado/horarios-pico"
             element={
-              <PrivateRoute roles={["ADMIN", "MACHINEPAY"]}>
+              <PrivateRoute permissao="machinePayDetalhado" roles={["ADMIN", "MACHINEPAY"]}>
                 <MachinePayHorariosPico />
               </PrivateRoute>
             }
@@ -284,7 +284,7 @@ function App() {
           <Route
             path="/machine-pay-detalhado/ranking"
             element={
-              <PrivateRoute roles={["ADMIN", "MACHINEPAY"]}>
+              <PrivateRoute permissao="machinePayDetalhado" roles={["ADMIN", "MACHINEPAY"]}>
                 <MachinePayRanking />
               </PrivateRoute>
             }
@@ -292,7 +292,7 @@ function App() {
           <Route
             path="/creditos-remotos"
             element={
-              <PrivateRoute adminOnly>
+              <PrivateRoute permissao="vouchers" adminOnly>
                 <CreditosRemotos />
               </PrivateRoute>
             }
@@ -300,7 +300,7 @@ function App() {
           <Route
             path="/sangrias"
             element={
-              <PrivateRoute>
+              <PrivateRoute permissao="sangrias">
                 <Sangrias />
               </PrivateRoute>
             }

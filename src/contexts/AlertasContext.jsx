@@ -28,13 +28,14 @@ const tiposVazios = () =>
   DEFINICAO_TIPOS.map((tipo) => ({ ...tipo, itens: [], total: 0 }));
 
 export function AlertasProvider({ children }) {
-  const { usuario } = useAuth();
+  const { usuario, pode } = useAuth();
+  const verAlertas = pode("alertas", usuario?.role === "ADMIN");
   const [tipos, setTipos] = useState(tiposVazios);
   const [carregando, setCarregando] = useState(false);
   const emAndamentoRef = useRef(false);
 
   const carregar = useCallback(async () => {
-    if (usuario?.role !== "ADMIN" || emAndamentoRef.current) return;
+    if (!verAlertas || emAndamentoRef.current) return;
     emAndamentoRef.current = true;
     setCarregando(true);
 
@@ -152,10 +153,10 @@ export function AlertasProvider({ children }) {
       emAndamentoRef.current = false;
       setCarregando(false);
     }
-  }, [usuario?.role]);
+  }, [verAlertas]);
 
   useEffect(() => {
-    if (usuario?.role !== "ADMIN") {
+    if (!verAlertas) {
       setTipos(tiposVazios());
       return;
     }
@@ -163,7 +164,7 @@ export function AlertasProvider({ children }) {
     carregar();
     const intervalo = setInterval(carregar, INTERVALO_ATUALIZACAO_MS);
     return () => clearInterval(intervalo);
-  }, [usuario?.role, carregar]);
+  }, [verAlertas, carregar]);
 
   const totalGeral = tipos.reduce((soma, tipo) => soma + tipo.total, 0);
 

@@ -7,7 +7,7 @@ import { PageLoader } from "../components/Loading";
 import { AlertBox, Badge, PageHeader } from "../components/UIComponents";
 
 export default function ManutencaoPage() {
-  const { usuario, loading: authLoading } = useAuth();
+  const { usuario, loading: authLoading, pode } = useAuth();
   const [manutencoes, setManutencoes] = useState([]);
   const [funcionarios, setFuncionarios] = useState([]);
   const [usuariosFiltro, setUsuariosFiltro] = useState([]);
@@ -35,7 +35,8 @@ export default function ManutencaoPage() {
     maquinaId: "",
   });
 
-  const isAdmin = usuario?.role === "ADMIN";
+  // Lança manutenções, vê todas e resolve qualquer uma
+  const gerencia = pode("manutencao.gerenciar", usuario?.role === "ADMIN");
 
   const manutencoesOrdenadas = useMemo(
     () =>
@@ -46,16 +47,16 @@ export default function ManutencaoPage() {
   );
 
   const manutencoesVisiveis = useMemo(() => {
-    if (isAdmin) return manutencoesOrdenadas;
+    if (gerencia) return manutencoesOrdenadas;
     return manutencoesOrdenadas.filter((item) => item.status !== "RESOLVIDA");
-  }, [isAdmin, manutencoesOrdenadas]);
+  }, [gerencia, manutencoesOrdenadas]);
 
   const carregarDados = useCallback(async () => {
     try {
       setError("");
 
       const params = {};
-      if (usuario?.role === "ADMIN") {
+      if (gerencia) {
         if (filtros.status !== "TODAS") params.status = filtros.status;
         if (filtros.dataInicio) params.dataInicio = filtros.dataInicio;
         if (filtros.dataFim) params.dataFim = filtros.dataFim;
@@ -68,7 +69,7 @@ export default function ManutencaoPage() {
       const manutencoesData = manutencoesResponse.data;
       setManutencoes(Array.isArray(manutencoesData) ? manutencoesData : []);
 
-      if (usuario?.role === "ADMIN") {
+      if (gerencia) {
         const [
           funcionariosResponse,
           lojasResponse,
@@ -101,7 +102,7 @@ export default function ManutencaoPage() {
     } finally {
       setLoading(false);
     }
-  }, [filtros, usuario?.role]);
+  }, [filtros, gerencia]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -117,7 +118,7 @@ export default function ManutencaoPage() {
 
   const handleCriar = async (event) => {
     event.preventDefault();
-    if (!isAdmin) return;
+    if (!gerencia) return;
 
     if (
       !form.titulo.trim() ||
@@ -231,7 +232,7 @@ export default function ManutencaoPage() {
           <AlertBox type="error" message={error} onClose={() => setError("")} />
         )}
 
-        {isAdmin && (
+        {gerencia && (
           <form onSubmit={handleCriar} className="card">
             <h2 className="mb-3 text-lg font-semibold text-gray-900">
               Lançar manutenção
@@ -374,7 +375,7 @@ export default function ManutencaoPage() {
           </form>
         )}
 
-        {isAdmin && (
+        {gerencia && (
           <div className="card">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900">
@@ -537,7 +538,7 @@ export default function ManutencaoPage() {
               {manutencoesVisiveis.map((item) => {
                 const podeResolver =
                   item.status === "PENDENTE" &&
-                  (isAdmin ||
+                  (gerencia ||
                     (item.funcionariosPermitidos || []).some(
                       (f) => f.id === usuario?.id,
                     ));
@@ -567,7 +568,7 @@ export default function ManutencaoPage() {
 
                     <div className="mt-2 space-y-1 text-xs text-gray-600">
                       <p>Criado por: {item.criadoPor?.nome || "-"}</p>
-                      {isAdmin && (
+                      {gerencia && (
                         <p>
                           Custo:{" "}
                           {item.custo !== null && item.custo !== undefined
@@ -579,7 +580,7 @@ export default function ManutencaoPage() {
                       {item.maquina && (
                         <p>Máquina: {nomeMaquina(item.maquina)}</p>
                       )}
-                      {isAdmin && (
+                      {gerencia && (
                         <p>
                           Funcionários permitidos:{" "}
                           {(item.funcionariosPermitidos || [])
@@ -587,7 +588,7 @@ export default function ManutencaoPage() {
                             .join(", ") || "-"}
                         </p>
                       )}
-                      {isAdmin && item.status === "RESOLVIDA" && (
+                      {gerencia && item.status === "RESOLVIDA" && (
                         <>
                           <p>Resolvido por: {item.resolvidoPor?.nome || "-"}</p>
                           <p>
