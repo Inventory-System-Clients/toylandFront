@@ -299,6 +299,8 @@ function usePermissoesMachinePay() {
     isAdmin,
     verValores: pode("machinePay.valores", acessoMachinePay),
     podeExtrato: pode("machinePay.extrato", acessoMachinePay),
+    // Sem isso o extrato fica nos últimos 3 dias (o servidor também limita)
+    extratoCompleto: pode("machinePay.extratoCompleto", isAdmin),
     podeCredito: pode("machinePay.creditoRemoto", acessoMachinePay),
     podeDevolver: pode("machinePay.devolucao", acessoMachinePay),
     podeHorario: pode("machinePay.horario", isAdmin),
@@ -1210,10 +1212,10 @@ function CreditoRemoto({ maquina }) {
   );
 }
 
-// Quem não é ADMIN só vê as vendas de hoje e dos últimos dias (o servidor também limita)
+// Sem extrato completo só se vê as vendas de hoje e dos últimos dias (o servidor também limita)
 const DIAS_VENDAS_NAO_ADMIN = 3;
 
-function ExtratoVendas({ maquina, verValores, podeDevolver, isAdmin }) {
+function ExtratoVendas({ maquina, verValores, podeDevolver, extratoCompleto: isAdmin }) {
   const hoje = dataBrasil();
   const dataMinima = isAdmin ? undefined : somarDias(hoje, -DIAS_VENDAS_NAO_ADMIN);
   // Abre já com o extrato: 30 dias para o ADMIN (como o painel), últimos dias para os demais
@@ -1372,7 +1374,7 @@ function AcoesMaquina({ maquina, permissoes }) {
             maquina={maquina}
             verValores={permissoes.verValores}
             podeDevolver={permissoes.podeDevolver}
-            isAdmin={permissoes.isAdmin}
+            extratoCompleto={permissoes.extratoCompleto}
           />
         </div>
       )}

@@ -27,7 +27,8 @@ export const CATALOGO_ABAS = [
     rota: "/machine-pay-detalhado",
     funcionalidades: [
       { chave: "machinePay.valores", label: "Ver valores em R$ (vendas de hoje, acumulado e ranking)" },
-      { chave: "machinePay.extrato", label: "Ver o extrato de vendas da máquina" },
+      { chave: "machinePay.extrato", label: "Ver o extrato de vendas da máquina (somente os últimos 3 dias)" },
+      { chave: "machinePay.extratoCompleto", label: "Ver o extrato completo (qualquer período, não só os últimos 3 dias)" },
       { chave: "machinePay.creditoRemoto", label: "Enviar crédito remoto para a máquina" },
       { chave: "machinePay.devolucao", label: "Devolver pagamentos do extrato" },
       { chave: "machinePay.horario", label: "Editar horário de funcionamento, região e posição no mapa" },
