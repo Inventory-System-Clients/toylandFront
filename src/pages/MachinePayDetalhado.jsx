@@ -325,7 +325,7 @@ function StatusPill({ online, pontoFechado }) {
     return (
       <Pill
         className="border-slate-300 bg-slate-100 text-slate-700"
-        title="Offline fora do horário de funcionamento cadastrado na máquina"
+        title="Offline fora do horário de funcionamento do ponto"
       >
         🌙 Ponto fechado
       </Pill>
@@ -547,7 +547,7 @@ function AbaMaquinas({
         status === "offline"
           ? "Só as que estão fora do ar dentro do horário de funcionamento. As que estão offline há mais tempo aparecem primeiro."
           : status === "fechado"
-            ? "Offline, mas fora do horário de funcionamento cadastrado na máquina — o ponto está fechado."
+            ? "Offline, mas fora do horário de funcionamento do ponto — o ponto está fechado."
             : "Clique no nome do ponto para ver o histórico completo da máquina."
       }
       acao={
@@ -1100,7 +1100,7 @@ function AbaAjuda() {
     ["⚡ Quedas (Nx)", "É o contador que o painel Machine Pay mostra ao lado do botão ON/OFF: quantas vezes o leitor perdeu a conexão e reconectou hoje. Zera à meia-noite."],
     ["🟢 Estável · 🟡 Atenção · 🟠 Instável · 🔴 Crítico", "0 quedas = estável · 1 a 2 = atenção · 3 a 4 = instável · 5 ou mais = crítico (vale ir ao ponto ou trocar o roteador/modem)."],
     ["🔴 Offline", "O leitor não está respondendo ao painel agora. Nesse estado ele não recebe pagamentos PIX ou cartão."],
-    ["🌙 Ponto fechado", "O leitor está offline, mas fora do horário de funcionamento cadastrado na máquina (Máquinas → Editar → Horário de funcionamento). Não entra na contagem de offline. Máquinas sem horário cadastrado são tratadas como 24h."],
+    ["🌙 Ponto fechado", "O leitor está offline, mas fora do horário de funcionamento do ponto (abra a máquina nesta página → 🕒 Editar horário). Não entra na contagem de offline. Máquinas sem horário cadastrado são tratadas como 24h."],
     ["Offline há…", "Tempo desde que o monitoramento viu a máquina cair. \"Antes do monitoramento\" significa que ela já estava offline quando começamos a acompanhar — use a última venda como referência."],
     ["📶 Sinal Wi-Fi", "Ótimo / Bom / Fraco / Ruim, como informado pelo leitor. \"Não informado\" é normal em leitores WEBSOCKET, que não mandam o sinal."],
     ["MQTT Instantâneo / Confirmado", "Como o leitor recebe o crédito: Instantâneo (WEBSOCKET) ou com confirmação de pulso (MQTT). \"Sem resposta\" = leitor não respondeu a última consulta."],
@@ -1415,9 +1415,7 @@ function EditarHorarioMaquina({ maquina, onFechar, onSalvo }) {
           <h4 className="font-bold text-gray-900">🕒 Horário de funcionamento</h4>
           <p className="text-xs text-gray-600">
             Offline fora desse horário aparece como "Ponto fechado".{" "}
-            {maquina.vinculo
-              ? `Salvo no cadastro da máquina ${maquina.vinculo.codigo || maquina.vinculo.nome}.`
-              : "Leitor sem máquina vinculada: o horário fica salvo para este caixa."}
+            O horário fica salvo para este caixa (Caixa {maquina.posId}).
           </p>
         </div>
         <button type="button" onClick={onFechar} className="text-sm text-gray-500 hover:text-gray-700">
@@ -1792,11 +1790,7 @@ function DetalheMaquina({ posId, onClose }) {
           value={m.regiao || "CAPITAL"}
           onChange={(e) => alterarRegiao(e.target.value)}
           disabled={salvandoRegiao}
-          title={
-            m.vinculo
-              ? "Região salva no cadastro da máquina"
-              : "Leitor sem máquina vinculada: a região fica salva para este caixa"
-          }
+          title="A região fica salva para este caixa"
           className="rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-sm font-semibold text-gray-700 shadow-sm disabled:opacity-50"
         >
           <option value="CAPITAL">🏙️ Capital</option>
@@ -2171,7 +2165,7 @@ export function MachinePayDetalhado() {
               🔎 Buscar ponto, caixa, IP ou máquina
               <input
                 className="input-field"
-                placeholder="Ex: Coco Bambu, 104510802, Loja 15..."
+                placeholder="Ex: Brisamar, 117031533, SP Market..."
                 value={buscaDigitada}
                 onChange={(e) => setBuscaDigitada(e.target.value)}
               />
