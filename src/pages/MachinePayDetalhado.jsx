@@ -1440,25 +1440,36 @@ function EditarHorarioMaquina({ maquina, onFechar, onSalvo }) {
   );
 }
 
+// Mesma API da tela Manutenção do Toyland: título, descrição e ao menos um
+// funcionário (quem pode ver e resolver). A loja vem da máquina.
 function NovaManutencaoMaquina({ maquina, onFechar, onCriada }) {
   const vinculo = maquina.vinculo;
+  const [titulo, setTitulo] = useState(`Máquina ${vinculo.codigo || vinculo.nome}`);
   const [descricao, setDescricao] = useState("");
-  const [urgente, setUrgente] = useState(false);
-  const [funcionarioId, setFuncionarioId] = useState("");
+  const [funcionariosIds, setFuncionariosIds] = useState([]);
   const [funcionarios, setFuncionarios] = useState([]);
   const [salvando, setSalvando] = useState(false);
   const [aviso, setAviso] = useState(null);
 
   useEffect(() => {
     api
-      .get("/usuarios/funcionarios")
+      .get("/manutencoes/funcionarios")
       .then((res) => setFuncionarios(res.data || []))
       .catch(() => setFuncionarios([]));
   }, []);
 
+  const alternarFuncionario = (id) =>
+    setFuncionariosIds((atual) =>
+      atual.includes(id) ? atual.filter((f) => f !== id) : [...atual, id],
+    );
+
   const salvar = async () => {
-    if (!descricao.trim()) {
-      setAviso({ type: "error", message: "Descreva o problema da máquina." });
+    if (!titulo.trim() || !descricao.trim()) {
+      setAviso({ type: "error", message: "Preencha o título e descreva o problema da máquina." });
+      return;
+    }
+    if (!funcionariosIds.length) {
+      setAviso({ type: "error", message: "Escolha ao menos um funcionário para a manutenção." });
       return;
     }
     // No computador a aba do WhatsApp precisa ser aberta ainda no clique
@@ -1467,33 +1478,34 @@ function NovaManutencaoMaquina({ maquina, onFechar, onCriada }) {
     setAviso(null);
     try {
       const res = await api.post("/manutencoes", {
+        titulo: titulo.trim(),
+        descricao: descricao.trim(),
+        funcionariosIds,
         maquinaId: vinculo.maquinaId,
         lojaId: vinculo.lojaId,
-        roteiroId: null,
-        descricao: descricao.trim(),
-        funcionarioId: funcionarioId || null,
-        status: urgente ? "urgente" : "pendente",
       });
-      const criada = res.data?.manutencao || {};
+      const criada = res.data || {};
+      const nomesFuncionarios = funcionarios
+        .filter((f) => funcionariosIds.includes(f.id))
+        .map((f) => f.nome)
+        .join(", ");
       const texto = montarTextoWhatsapp({
         ...criada,
         descricao: criada.descricao || descricao.trim(),
-        status: criada.status || (urgente ? "urgente" : "pendente"),
+        status: "pendente",
         loja: criada.loja || { nome: vinculo.lojaNome },
         maquina: criada.maquina || { codigo: vinculo.codigo, nome: vinculo.nome },
-        funcionario:
-          criada.funcionario || funcionarios.find((f) => String(f.id) === String(funcionarioId)),
+        funcionario: nomesFuncionarios ? { nome: nomesFuncionarios } : null,
       });
       enviarWhatsapp(texto, abaWhatsapp);
       setAviso({
         type: "success",
-        message: "Manutenção criada e aberta no WhatsApp. Ela já aparece na aba Manutenções.",
+        message: "Manutenção criada e aberta no WhatsApp. Ela já aparece na tela Manutenção.",
         texto,
       });
       onCriada?.();
       setDescricao("");
-      setUrgente(false);
-      setFuncionarioId("");
+      setFuncionariosIds([]);
     } catch (error) {
       abaWhatsapp?.close();
       setAviso({ type: "error", message: mensagemErro(error, "Erro ao criar manutenção") });
@@ -1531,7 +1543,7 @@ function NovaManutencaoMaquina({ maquina, onFechar, onCriada }) {
                   Enviar de novo
                 </button>
                 {" · "}
-                <Link to="/manutencoes" className="font-semibold underline">
+                <Link to="/manutencao" className="font-semibold underline">
                   Ver manutenções
                 </Link>
               </>
@@ -1543,6 +1555,12 @@ function NovaManutencaoMaquina({ maquina, onFechar, onCriada }) {
         />
       )}
       <div className="space-y-3">
+        <input
+          className="input-field w-full"
+          placeholder="Título"
+          value={titulo}
+          onChange={(e) => setTitulo(e.target.value)}
+        />
         <textarea
           className="input-field w-full"
           rows={3}
@@ -1550,24 +1568,35 @@ function NovaManutencaoMaquina({ maquina, onFechar, onCriada }) {
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
         />
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            className="input-field w-auto"
-            value={funcionarioId}
-            onChange={(e) => setFuncionarioId(e.target.value)}
-          >
-            <option value="">Sem funcionário atribuído</option>
-            {funcionarios.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.nome}
-              </option>
-            ))}
-          </select>
-          <label className="flex items-center gap-2 text-sm font-semibold text-red-700">
-            <input type="checkbox" checked={urgente} onChange={(e) => setUrgente(e.target.checked)} />
-            Urgente
-          </label>
-          <button type="button" onClick={salvar} className="btn-primary ml-auto" disabled={salvando}>
+        <div>
+          <p className="mb-1 text-xs font-semibold text-gray-700">Funcionários que podem ver e resolver</p>
+          {funcionarios.length === 0 ? (
+            <p className="text-xs text-gray-500">Nenhum funcionário ativo encontrado.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {funcionarios.map((f) => (
+                <label
+                  key={f.id}
+                  className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1 text-sm ${
+                    funcionariosIds.includes(f.id)
+                      ? "border-[#800080] bg-[#800080] text-white"
+                      : "border-gray-300 bg-white text-gray-700"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    className="hidden"
+                    checked={funcionariosIds.includes(f.id)}
+                    onChange={() => alternarFuncionario(f.id)}
+                  />
+                  {f.nome}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="flex justify-end">
+          <button type="button" onClick={salvar} className="btn-primary" disabled={salvando}>
             {salvando ? "Salvando..." : "Criar e enviar no WhatsApp"}
           </button>
         </div>
@@ -1583,7 +1612,7 @@ function NovaManutencaoMaquina({ maquina, onFechar, onCriada }) {
 const DIAS_RECORRENCIA = 30;
 const LIMITE_RECORRENCIA_ALTA = 10;
 
-const manutencaoConcluida = (status) => /feit|conclu/i.test(String(status || ""));
+const manutencaoConcluida = (status) => /feit|conclu|resolvid/i.test(String(status || ""));
 
 // Verde: nenhuma nos últimos 30 dias · Amarelo: até 10 · Vermelho: mais de 10
 const nivelRecorrencia = (qtd) => {
@@ -1628,10 +1657,16 @@ function HistoricoManutencoesMaquina({ manutencoes, onFechar }) {
                   recente ? "" : "bg-gray-50 text-gray-500"
                 }`}
               >
-                <span className="min-w-0 flex-1">{m.descricao}</span>
+                <span className="min-w-0 flex-1">
+                  <b>{m.titulo}</b>
+                  {m.titulo && m.descricao ? " · " : ""}
+                  {m.descricao}
+                </span>
                 <span className="flex items-center gap-3 text-xs">
                   <span className="whitespace-nowrap">{formatarDataHora(m.createdAt)}</span>
-                  <span>{m.funcionario?.nome || "-"}</span>
+                  <span>
+                    {(m.funcionariosPermitidos || []).map((f) => f.nome).join(", ") || "-"}
+                  </span>
                   <Pill
                     className={
                       manutencaoConcluida(m.status)
@@ -1660,8 +1695,8 @@ function HistoricoManutencoesMaquina({ manutencoes, onFechar }) {
 function DetalheMaquina({ posId, onClose }) {
   const [dias, setDias] = useState(30);
   const permissoes = usePermissoesMachinePay();
-  // No Toyland as manutenções não são por máquina: atalho de manutenção desligado aqui.
-  const podeCriarManutencao = false;
+  // Manutenção por máquina: no Toyland só o ADMIN cria e vê todas as manutenções
+  const podeCriarManutencao = permissoes.isAdmin;
   const [novaManutencaoAberta, setNovaManutencaoAberta] = useState(false);
   const [historicoAberto, setHistoricoAberto] = useState(false);
   const [versaoManutencoes, setVersaoManutencoes] = useState(0);
@@ -1698,7 +1733,7 @@ function DetalheMaquina({ posId, onClose }) {
     maquinaId: maquinaSistemaId,
     _v: versaoManutencoes || undefined,
   });
-  // Filtra também aqui, caso o servidor ainda não aplique ?maquinaId=
+  // Filtra também aqui, por garantia
   const manutencoesMaquina = manutencoesResposta
     ? manutencoesResposta.filter((mt) => (mt.maquinaId || mt.maquina?.id) === maquinaSistemaId)
     : null;

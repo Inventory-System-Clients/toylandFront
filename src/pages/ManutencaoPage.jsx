@@ -12,6 +12,7 @@ export default function ManutencaoPage() {
   const [funcionarios, setFuncionarios] = useState([]);
   const [usuariosFiltro, setUsuariosFiltro] = useState([]);
   const [lojas, setLojas] = useState([]);
+  const [maquinas, setMaquinas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -22,6 +23,7 @@ export default function ManutencaoPage() {
     funcionariosIds: [],
     custo: "",
     lojaId: "",
+    maquinaId: "",
   });
 
   const [filtros, setFiltros] = useState({
@@ -30,6 +32,7 @@ export default function ManutencaoPage() {
     dataFim: "",
     lojaId: "",
     usuarioId: "",
+    maquinaId: "",
   });
 
   const isAdmin = usuario?.role === "ADMIN";
@@ -58,6 +61,7 @@ export default function ManutencaoPage() {
         if (filtros.dataFim) params.dataFim = filtros.dataFim;
         if (filtros.lojaId) params.lojaId = filtros.lojaId;
         if (filtros.usuarioId) params.usuarioId = filtros.usuarioId;
+        if (filtros.maquinaId) params.maquinaId = filtros.maquinaId;
       }
 
       const manutencoesResponse = await api.get("/manutencoes", { params });
@@ -65,12 +69,19 @@ export default function ManutencaoPage() {
       setManutencoes(Array.isArray(manutencoesData) ? manutencoesData : []);
 
       if (usuario?.role === "ADMIN") {
-        const [funcionariosResponse, lojasResponse, usuariosResponse] =
-          await Promise.all([
-            api.get("/manutencoes/funcionarios"),
-            api.get("/lojas"),
-            api.get("/usuarios"),
-          ]);
+        const [
+          funcionariosResponse,
+          lojasResponse,
+          usuariosResponse,
+          maquinasResponse,
+        ] = await Promise.all([
+          api.get("/manutencoes/funcionarios"),
+          api.get("/lojas"),
+          api.get("/usuarios"),
+          api.get("/maquinas"),
+        ]);
+        const maquinasData = maquinasResponse.data;
+        setMaquinas(Array.isArray(maquinasData) ? maquinasData : []);
         const funcionariosData = funcionariosResponse.data;
         const lojasData = lojasResponse.data;
         const usuariosData = usuariosResponse.data;
@@ -83,6 +94,7 @@ export default function ManutencaoPage() {
         setFuncionarios([]);
         setLojas([]);
         setUsuariosFiltro([]);
+        setMaquinas([]);
       }
     } catch (err) {
       setError(err.response?.data?.error || "Erro ao carregar dados");
@@ -144,6 +156,7 @@ export default function ManutencaoPage() {
         funcionariosIds: form.funcionariosIds,
         custo: custoInformado ? custoNumerico : null,
         lojaId: form.lojaId || null,
+        maquinaId: form.maquinaId || null,
       });
 
       setForm({
@@ -152,6 +165,7 @@ export default function ManutencaoPage() {
         funcionariosIds: [],
         custo: "",
         lojaId: "",
+        maquinaId: "",
       });
       await carregarDados();
     } catch (err) {
@@ -182,8 +196,18 @@ export default function ManutencaoPage() {
       dataFim: "",
       lojaId: "",
       usuarioId: "",
+      maquinaId: "",
     });
   };
+
+  const nomeMaquina = (maquina) =>
+    maquina ? [maquina.codigo, maquina.nome].filter(Boolean).join(" · ") : "-";
+
+  // Máquinas da loja escolhida (todas, se nenhuma loja)
+  const maquinasDaLoja = (lojaId) =>
+    lojaId
+      ? maquinas.filter((m) => String(m.lojaId) === String(lojaId))
+      : maquinas;
 
   const formatarDataHora = (dataIso) => {
     if (!dataIso) return "-";
@@ -287,7 +311,16 @@ export default function ManutencaoPage() {
                 <select
                   value={form.lojaId}
                   onChange={(e) =>
-                    setForm((prev) => ({ ...prev, lojaId: e.target.value }))
+                    setForm((prev) => ({
+                      ...prev,
+                      lojaId: e.target.value,
+                      // Máquina de outra loja deixa de valer
+                      maquinaId: maquinasDaLoja(e.target.value).some(
+                        (m) => m.id === prev.maquinaId,
+                      )
+                        ? prev.maquinaId
+                        : "",
+                    }))
                   }
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
                 >
@@ -298,6 +331,34 @@ export default function ManutencaoPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Máquina (opcional)
+                </label>
+                <select
+                  value={form.maquinaId}
+                  onChange={(e) => {
+                    const maquina = maquinas.find((m) => m.id === e.target.value);
+                    setForm((prev) => ({
+                      ...prev,
+                      maquinaId: e.target.value,
+                      lojaId: maquina?.lojaId ? String(maquina.lojaId) : prev.lojaId,
+                    }));
+                  }}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+                >
+                  <option value="">Sem máquina específica</option>
+                  {maquinasDaLoja(form.lojaId).map((maquina) => (
+                    <option key={maquina.id} value={maquina.id}>
+                      {nomeMaquina(maquina)}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Escolhendo a máquina, a loja é preenchida com a dela.
+                </p>
               </div>
             </div>
 
@@ -337,7 +398,7 @@ export default function ManutencaoPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">
                   Status
@@ -428,6 +489,29 @@ export default function ManutencaoPage() {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Máquina
+                </label>
+                <select
+                  value={filtros.maquinaId}
+                  onChange={(e) =>
+                    setFiltros((prev) => ({
+                      ...prev,
+                      maquinaId: e.target.value,
+                    }))
+                  }
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 outline-none focus:border-blue-500"
+                >
+                  <option value="">Todas</option>
+                  {maquinasDaLoja(filtros.lojaId).map((maquina) => (
+                    <option key={maquina.id} value={maquina.id}>
+                      {nomeMaquina(maquina)}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         )}
@@ -492,6 +576,9 @@ export default function ManutencaoPage() {
                         </p>
                       )}
                       <p>Loja: {item.loja?.nome || "-"}</p>
+                      {item.maquina && (
+                        <p>Máquina: {nomeMaquina(item.maquina)}</p>
+                      )}
                       {isAdmin && (
                         <p>
                           Funcionários permitidos:{" "}
