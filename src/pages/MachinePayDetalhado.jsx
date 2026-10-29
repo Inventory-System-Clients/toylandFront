@@ -1239,7 +1239,7 @@ function ExtratoVendas({ maquina, verValores, podeDevolver, extratoCompleto: isA
       icon: "warning",
       title: "Devolver este pagamento?",
       html: `${venda.tipo} de ${formatarDataHora(venda.data)}${
-        verValores && venda.valor !== undefined ? ` — <b>${formatarMoeda(venda.valor)}</b>` : ""
+        venda.valor !== undefined ? ` — <b>${formatarMoeda(venda.valor)}</b>` : ""
       }<br/>O valor é estornado para quem pagou.`,
       showCancelButton: true,
       confirmButtonText: "Devolver",
@@ -1326,7 +1326,8 @@ function ExtratoVendas({ maquina, verValores, podeDevolver, extratoCompleto: isA
                   <th className="px-3 py-2">Data</th>
                   <th className="px-3 py-2">Método</th>
                   <th className="px-3 py-2">Situação</th>
-                  {verValores && <th className="px-3 py-2 text-right">Valor</th>}
+                  {/* Valor de cada venda aparece sempre; só o total do período depende de "ver valores" */}
+                  <th className="px-3 py-2 text-right">Valor</th>
                   <th className="px-3 py-2 text-right"></th>
                 </tr>
               </thead>
@@ -1336,9 +1337,7 @@ function ExtratoVendas({ maquina, verValores, podeDevolver, extratoCompleto: isA
                     <td className="whitespace-nowrap px-3 py-2">{formatarDataHora(v.data)}</td>
                     <td className="px-3 py-2">{v.tipo}</td>
                     <td className="px-3 py-2 text-xs">{v.status}</td>
-                    {verValores && (
-                      <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">{formatarMoeda(v.valor)}</td>
-                    )}
+                    <td className="whitespace-nowrap px-3 py-2 text-right font-semibold">{formatarMoeda(v.valor)}</td>
                     <td className="whitespace-nowrap px-3 py-2 text-right">
                       {v.devolvido ? (
                         <Pill className="border-gray-300 bg-gray-100 text-gray-600">Devolvido</Pill>
