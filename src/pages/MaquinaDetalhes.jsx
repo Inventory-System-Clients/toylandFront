@@ -254,21 +254,6 @@ export function MaquinaDetalhes() {
                   : maquina.valorFicha || "-"}
               </p>
             </div>
-            <div>
-              <p>
-                <strong>Força Fraca:</strong> {maquina.forcaFraca ?? "-"}%
-              </p>
-              <p>
-                <strong>Força Forte:</strong> {maquina.forcaForte ?? "-"}%
-              </p>
-              <p>
-                <strong>Força Premium:</strong> {maquina.forcaPremium ?? "-"}%
-              </p>
-              <p>
-                <strong>Jogadas Premium:</strong>{" "}
-                {maquina.jogadasPremium ?? "-"}
-              </p>
-            </div>
           </div>
         </div>
 
