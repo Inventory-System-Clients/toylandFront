@@ -372,9 +372,18 @@ export function Movimentacoes() {
     }
 
     const quantidadeAtual = Math.max(0, totalAnterior - saidasPeloContador);
-    const quantidadeSugerida = Number.isFinite(capacidade)
-      ? Math.max(0, capacidade - quantidadeAtual)
-      : null;
+    // Meta do abastecimento: voltar ao que a máquina tinha depois da última
+    // movimentação. Sem esse total (ou zerado), usa a capacidade padrão.
+    const usarUltimaVez = totalAnterior > 0;
+    const metaAbastecimento = usarUltimaVez
+      ? totalAnterior
+      : Number.isFinite(capacidade)
+        ? capacidade
+        : null;
+    const quantidadeSugerida =
+      metaAbastecimento !== null
+        ? Math.max(0, metaAbastecimento - quantidadeAtual)
+        : null;
 
     // Diferença de entrada e média de jogadas por bicho:
     // diferença = IN atual - IN anterior
@@ -421,6 +430,8 @@ export function Movimentacoes() {
       saidasPeloContador,
       quantidadeAtual,
       quantidadeSugerida,
+      metaAbastecimento,
+      metaPelaUltimaVez: usarUltimaVez,
       diferencaEntrada,
       mediaJogadasPorBicho,
       jogadasBoasPorPelucia,
@@ -2362,8 +2373,13 @@ export function Movimentacoes() {
                           última movimentação.
                         </p>
                       </div>
-                      <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-white">
-                        Padrão: {sugestaoMovimentacao.capacidade ?? "—"}
+                      <span
+                        className="whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold text-white"
+                        style={{ backgroundColor: "#800080" }}
+                      >
+                        {sugestaoMovimentacao.metaPelaUltimaVez
+                          ? `Última vez: ${sugestaoMovimentacao.metaAbastecimento}`
+                          : `Padrão: ${sugestaoMovimentacao.capacidade ?? "—"}`}
                       </span>
                     </div>
 
@@ -2387,7 +2403,9 @@ export function Movimentacoes() {
                           {sugestaoMovimentacao.quantidadeSugerida ?? "—"}
                         </p>
                         <p className="text-xs text-secondary-dark/80">
-                          para voltar ao padrão
+                          {sugestaoMovimentacao.metaPelaUltimaVez
+                            ? `para voltar a ${sugestaoMovimentacao.metaAbastecimento}, como da última vez`
+                            : "para voltar ao padrão"}
                         </p>
                       </div>
                     </div>
