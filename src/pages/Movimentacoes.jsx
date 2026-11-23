@@ -138,6 +138,7 @@ export function Movimentacoes() {
   const [maquinas, setMaquinas] = useState([]);
   const [produtos, setProdutos] = useState([]);
   const [lojas, setLojas] = useState([]);
+  const [erroCarregamento, setErroCarregamento] = useState("");
   const [usuarios, setUsuarios] = useState([]);
 
   // UI States
@@ -545,29 +546,59 @@ export function Movimentacoes() {
   }, [formData.maquina_id, formData.produto_id]);
 
   // --- FUNÇÕES DE CARREGAMENTO ---
-  const carregarDados = async () => {
-    try {
-      setLoading(true);
-      const [movRes, maqRes, prodRes, lojasRes, usuariosRes] =
-        await Promise.all([
-          api.get("/movimentacoes"),
-          api.get("/maquinas"),
-          api.get("/produtos"),
-          api.get("/lojas"),
-          api.get("/usuarios").catch(() => ({ data: [] })),
-        ]);
-
-      setMovimentacoes(movRes.data || []);
-      setMaquinas(maqRes.data || []);
-      setProdutos(prodRes.data || []);
-      setLojas(lojasRes.data || []);
-      setUsuarios(usuariosRes.data || []);
-    } catch (err) {
-      console.error("Erro ao carregar dados:", err);
-      setError("Erro ao carregar dados iniciais.");
-    } finally {
-      setLoading(false);
+  // Cada lista é carregada de forma independente e com novas tentativas: se o
+  // servidor oscilar (ex: acordando no Render), uma falha em /movimentacoes não
+  // pode deixar o select de lojas vazio.
+  const getComRetry = async (url, tentativas = 3) => {
+    for (let i = 1; ; i++) {
+      try {
+        return await api.get(url, { timeout: 30000 });
+      } catch (err) {
+        const status = err.response?.status;
+        const definitivo = status && status < 500 && status !== 429;
+        if (definitivo || i >= tentativas) throw err;
+        await new Promise((r) => setTimeout(r, 1500 * i));
+      }
     }
+  };
+
+  const carregarDados = async () => {
+    setLoading(true);
+    setErroCarregamento("");
+    const [movRes, maqRes, prodRes, lojasRes, usuariosRes] =
+      await Promise.allSettled([
+        getComRetry("/movimentacoes"),
+        getComRetry("/maquinas"),
+        getComRetry("/produtos"),
+        getComRetry("/lojas"),
+        api.get("/usuarios"),
+      ]);
+
+    if (movRes.status === "fulfilled") setMovimentacoes(movRes.value.data || []);
+    if (maqRes.status === "fulfilled") setMaquinas(maqRes.value.data || []);
+    if (prodRes.status === "fulfilled") setProdutos(prodRes.value.data || []);
+    if (lojasRes.status === "fulfilled") setLojas(lojasRes.value.data || []);
+    if (usuariosRes.status === "fulfilled")
+      setUsuarios(usuariosRes.value.data || []);
+
+    const falhas = [
+      ["movimentações", movRes],
+      ["máquinas", maqRes],
+      ["produtos", prodRes],
+      ["lojas", lojasRes],
+    ].filter(([, r]) => r.status === "rejected");
+
+    if (falhas.length) {
+      falhas.forEach(([nome, r]) =>
+        console.error(`Erro ao carregar ${nome}:`, r.reason),
+      );
+      const msg = `Não foi possível carregar: ${falhas
+        .map(([nome]) => nome)
+        .join(", ")}. Verifique a internet e toque em "Tentar novamente".`;
+      setErroCarregamento(msg);
+      setError(msg);
+    }
+    setLoading(false);
   };
 
   const carregarMovimentacoesEstoqueLoja = async () => {
@@ -2118,6 +2149,23 @@ export function Movimentacoes() {
                           </option>
                         ))}
                     </select>
+                    {erroCarregamento && !loading && (
+                      <div className="mt-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+                        <p>{erroCarregamento}</p>
+                        <button
+                          type="button"
+                          onClick={carregarDados}
+                          className="mt-2 rounded-md bg-red-600 px-3 py-1.5 font-semibold text-white"
+                        >
+                          🔄 Tentar novamente
+                        </button>
+                      </div>
+                    )}
+                    {loading && lojas.length === 0 && (
+                      <p className="mt-2 text-sm text-gray-500">
+                        Carregando lojas...
+                      </p>
+                    )}
                   </div>
 
                   <div>
