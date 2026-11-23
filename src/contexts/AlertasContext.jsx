@@ -17,7 +17,6 @@ const DEFINICAO_TIPOS = [
   { id: "movimentacao", label: "Movimentação (contador)", icone: "🔄", cor: "purple" },
   { id: "estoque-maquina", label: "Estoque baixo em máquina", icone: "🎮", cor: "red" },
   { id: "estoque-loja", label: "Estoque baixo em loja", icone: "🏪", cor: "orange" },
-  { id: "abastecimento-incompleto", label: "Abastecimento incompleto", icone: "📦", cor: "amber" },
   { id: "pelucia-gigante", label: "Pelúcia gigante perto de sair", icone: "🧸", cor: "fuchsia" },
   { id: "desempenho", label: "Pelúcias fora do esperado", icone: "⚠️", cor: "rose" },
   { id: "manutencao", label: "Manutenção pendente", icone: "🛠️", cor: "yellow" },
@@ -44,7 +43,6 @@ export function AlertasProvider({ children }) {
         estoqueMaquinaRes,
         desempenhoRes,
         peluciaGiganteRes,
-        abastecimentoRes,
         movOutRes,
         movInRes,
         lojasRes,
@@ -59,9 +57,6 @@ export function AlertasProvider({ children }) {
           .catch(() => ({ data: { alertas: [] } })),
         api
           .get("/relatorios/alertas-pelucia-gigante")
-          .catch(() => ({ data: { alertas: [] } })),
-        api
-          .get("/relatorios/alertas-abastecimento-incompleto")
           .catch(() => ({ data: { alertas: [] } })),
         api
           .get("/relatorios/alertas-movimentacao-out")
@@ -116,10 +111,6 @@ export function AlertasProvider({ children }) {
         {
           id: "estoque-loja",
           itens: estoqueLojaItens,
-        },
-        {
-          id: "abastecimento-incompleto",
-          itens: abastecimentoRes.data?.alertas || [],
         },
         {
           id: "pelucia-gigante",
